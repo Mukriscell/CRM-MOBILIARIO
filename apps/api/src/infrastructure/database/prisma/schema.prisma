@@ -1,0 +1,1126 @@
+// =============================================================================
+// CLIENTRA — Plataforma de Conversión y Recuperación de Leads Inmobiliarios
+// schema.prisma  ·  FASE 8
+// -----------------------------------------------------------------------------
+// Principio: el Lead es el aggregate root. Property es soporte.
+// Multi-tenant: shared schema + tenantId (índice compuesto con tenantId primero).
+// Convención: modelo PascalCase singular · campo camelCase · columna snake_case
+//             (@map) · tabla snake_case plural (@@map).
+// Soft delete: deletedAt nullable en modelos que conservan historial de negocio.
+// Append-only: LeadActivity, LeadTimelineEvent, Message, AuditLog (sin update/delete).
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS  (contratos estables — candidatos a packages/shared-types)
+// =============================================================================
+
+// --- Lead domain ---
+enum LeadStatus {
+  NUEVO
+  CONTACTADO
+  INTERESADO
+  VISITA_AGENDADA
+  NEGOCIACION
+  RESERVA
+  VENTA_CERRADA
+  PERDIDO
+}
+
+enum LeadSource {
+  WHATSAPP
+  META_ADS
+  INSTAGRAM
+  LANDING
+  WEB_FORM
+  PORTAL
+  REFERIDO
+  OTRO
+}
+
+enum LeadLostReason {
+  SIN_RESPUESTA
+  FUERA_PRESUPUESTO
+  COMPRO_CON_OTRO
+  NO_CALIFICA_CREDITO
+  SOLO_CONSULTA
+  DUPLICADO
+  OTRO
+}
+
+enum ScoreTier {
+  HOT
+  WARM
+  COLD
+}
+
+enum ScoreSource {
+  AI
+  HEURISTIC
+}
+
+enum CreditStatus {
+  NONE
+  PRE_APPROVED
+  APPROVED
+}
+
+enum UrgencyLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AssignedBy {
+  SYSTEM
+  MANUAL
+}
+
+enum ActivityType {
+  LLAMADA
+  WHATSAPP
+  EMAIL
+  REUNION
+  VISITA
+  NOTA
+  STATUS_CHANGE
+  SYSTEM
+}
+
+enum FollowUpChannel {
+  WHATSAPP
+  EMAIL
+}
+
+enum FollowUpStatus {
+  PENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+enum InactivityThreshold {
+  DAYS_30
+  DAYS_60
+  DAYS_90
+}
+
+enum RecoveryOutcome {
+  PENDING
+  REACTIVATED
+  NO_RESPONSE
+  LOST
+}
+
+enum TimelineEventType {
+  LEAD_CREATED
+  LEAD_ASSIGNED
+  LEAD_QUALIFIED
+  LEAD_STATUS_CHANGED
+  LEAD_WENT_COLD
+  LEAD_RECOVERED
+  VISIT_SCHEDULED
+  FIRST_RESPONSE
+}
+
+// --- Auth / Platform ---
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  CORREDOR
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum PlanTier {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PriceCurrency {
+  UF
+  CLP
+}
+
+// --- Property ---
+enum PropertyType {
+  DEPTO
+  CASA
+  OFICINA
+  TERRENO
+  LOCAL
+  BODEGA
+  ESTACIONAMIENTO
+}
+
+enum PropertyStatus {
+  ACTIVA
+  RESERVADA
+  VENDIDA
+  INACTIVA
+}
+
+// --- Visit ---
+enum VisitStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum VisitReminderStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum CalendarProvider {
+  GOOGLE
+}
+
+// --- Communication ---
+enum ConversationStatus {
+  OPEN
+  SNOOZED
+  CLOSED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageType {
+  TEXT
+  TEMPLATE
+  IMAGE
+  DOCUMENT
+  AUDIO
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum MessageTemplateStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+// --- AI ---
+enum AIProviderType {
+  OPENAI
+  ANTHROPIC
+  HEURISTIC
+}
+
+enum ClassificationType {
+  INTENT
+  SENTIMENT
+}
+
+enum RecommendationType {
+  NEXT_ACTION
+  SUGGESTED_REPLY
+}
+
+// --- Notifications ---
+enum NotificationType {
+  LEAD_ASSIGNED
+  LEAD_WENT_COLD
+  VISIT_REMINDER
+  FOLLOWUP_DUE
+  SYSTEM
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  PUSH
+}
+
+enum DeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+// --- Audit ---
+enum AuditActionType {
+  CREATE
+  UPDATE
+  DELETE
+  ASSIGN
+  STATUS_CHANGE
+  LOGIN
+  EXPORT
+}
+
+// =============================================================================
+// PLATFORM DOMAIN
+// =============================================================================
+
+model Tenant {
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String       @unique
+  rut       String?
+  status    TenantStatus @default(TRIAL)
+  timezone  String       @default("America/Santiago")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  deletedAt DateTime?    @map("deleted_at")
+
+  // Relations (tenant es la raíz de aislamiento)
+  users           User[]
+  roles           Role[]
+  subscription    Subscription?
+  invoices        Invoice[]
+  payments        Payment[]
+  usageMetrics    UsageMetric[]
+  leads           Lead[]
+  properties      Property[]
+  conversations   Conversation[]
+  messages        Message[]
+  messageTemplates MessageTemplate[]
+  visits          Visit[]
+  notifications   Notification[]
+  notificationTemplates NotificationTemplate[]
+  auditLogs       AuditLog[]
+  leadTags        LeadTag[]
+
+  @@index([status])
+  @@map("tenants")
+}
+
+model Plan {
+  id            String   @id @default(uuid()) @db.Uuid
+  tier          PlanTier
+  name          String
+  priceClp      Decimal  @map("price_clp") @db.Decimal(12, 2)
+  billingPeriod String   @default("monthly") @map("billing_period")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+  featureLimits FeatureLimit[]
+
+  @@index([tier, isActive])
+  @@map("plans")
+}
+
+model FeatureLimit {
+  id          String  @id @default(uuid()) @db.Uuid
+  planId      String  @map("plan_id") @db.Uuid
+  featureKey  String  @map("feature_key")
+  limitValue  Int?    @map("limit_value")
+  isUnlimited Boolean @default(false) @map("is_unlimited")
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, featureKey])
+  @@map("feature_limits")
+}
+
+model Subscription {
+  id                   String             @id @default(uuid()) @db.Uuid
+  tenantId             String             @unique @map("tenant_id") @db.Uuid
+  planId               String             @map("plan_id") @db.Uuid
+  status               SubscriptionStatus @default(TRIALING)
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  trialEndsAt          DateTime?          @map("trial_ends_at")
+  cancelledAt          DateTime?          @map("cancelled_at")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  plan     Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  invoices Invoice[]
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @map("tenant_id") @db.Uuid
+  subscriptionId  String        @map("subscription_id") @db.Uuid
+  stripeInvoiceId String?       @unique @map("stripe_invoice_id")
+  amount          Decimal       @db.Decimal(12, 2)
+  currency        String        @default("CLP")
+  status          InvoiceStatus @default(DRAFT)
+  periodStart     DateTime?     @map("period_start")
+  periodEnd       DateTime?     @map("period_end")
+  issuedAt        DateTime?     @map("issued_at")
+  paidAt          DateTime?     @map("paid_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  payments     Payment[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, issuedAt])
+  @@map("invoices")
+}
+
+model Payment {
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @map("tenant_id") @db.Uuid
+  invoiceId       String        @map("invoice_id") @db.Uuid
+  stripePaymentId String?       @unique @map("stripe_payment_id")
+  amount          Decimal       @db.Decimal(12, 2)
+  status          PaymentStatus @default(SUCCEEDED)
+  paidAt          DateTime?     @map("paid_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status])
+  @@map("payments")
+}
+
+model UsageMetric {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  metricKey  String   @map("metric_key")
+  value      Int
+  period     String // YYYY-MM
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, metricKey, period])
+  @@index([tenantId, period])
+  @@map("usage_metrics")
+}
+
+// =============================================================================
+// AUTH DOMAIN
+// =============================================================================
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  tenantId     String?    @map("tenant_id") @db.Uuid // NULL solo para SUPER_ADMIN global
+  email        String
+  passwordHash String     @map("password_hash")
+  firstName    String     @map("first_name")
+  lastName     String     @map("last_name")
+  phone        String?
+  role         UserRole   @default(CORREDOR)
+  roleId       String?    @map("role_id") @db.Uuid
+  status       UserStatus @default(INVITED)
+  lastLoginAt  DateTime?  @map("last_login_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  tenant              Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  roleRef             Role?                @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  sessions            UserSession[]
+  passwordResetTokens PasswordResetToken[]
+  auditLogs           AuditLog[]
+
+  // Lead-centric: el corredor trabaja leads
+  assignedLeads       Lead[]               @relation("LeadAssignedUser")
+  leadAssignments     LeadAssignment[]
+  leadActivities      LeadActivity[]
+  leadNotes           LeadNote[]
+  assignedProperties  Property[]
+  conversations       Conversation[]
+  sentMessages        Message[]
+  visits              Visit[]
+  notifications       Notification[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, status])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+model Role {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String?  @map("tenant_id") @db.Uuid // NULL = rol de sistema
+  key       UserRole
+  name      String
+  isSystem  Boolean  @default(false) @map("is_system")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users       User[]
+  permissions RolePermission[]
+
+  @@unique([tenantId, key])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  tenantId         String?   @map("tenant_id") @db.Uuid
+  refreshTokenHash String    @map("refresh_token_hash")
+  ip               String?
+  userAgent        String?   @map("user_agent")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// =============================================================================
+// CORE CONVERSION DOMAIN  —  el Lead es el aggregate root
+// =============================================================================
+
+model Lead {
+  id        String     @id @default(uuid()) @db.Uuid
+  tenantId  String     @map("tenant_id") @db.Uuid
+  firstName String?    @map("first_name")
+  lastName  String?    @map("last_name")
+  email     String?
+  phone     String? // clave para WhatsApp y deduplicación
+  source    LeadSource
+  status    LeadStatus @default(NUEVO)
+
+  // Calificación financiera (priorización inteligente — diferenciador CL)
+  budgetAmount    Decimal?      @map("budget_amount") @db.Decimal(14, 2)
+  budgetCurrency  PriceCurrency @default(CLP) @map("budget_currency")
+  downPayment     Decimal?      @map("down_payment") @db.Decimal(14, 2)
+  creditStatus    CreditStatus  @default(NONE) @map("credit_status")
+  subsidyEligible Boolean?      @map("subsidy_eligible")
+  urgency         UrgencyLevel?
+
+  // Relaciones desnormalizadas para queries calientes
+  assignedUserId        String?    @map("assigned_user_id") @db.Uuid
+  interestedPropertyId  String?    @map("interested_property_id") @db.Uuid
+  currentScoreTier      ScoreTier? @map("current_score_tier")
+
+  // Campos ★ estratégicos
+  firstResponseAt DateTime? @map("first_response_at") // speed-to-lead (TTFR)
+  lastActivityAt  DateTime  @default(now()) @map("last_activity_at") // base de Recovery
+
+  lostReason LeadLostReason? @map("lost_reason")
+  rawPayload Json?           @map("raw_payload")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at") // soft delete — un lead nunca se destruye
+
+  tenant             Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedUser       User?      @relation("LeadAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  interestedProperty Property?  @relation(fields: [interestedPropertyId], references: [id], onDelete: SetNull)
+
+  scores         LeadScore[]
+  assignments    LeadAssignment[]
+  activities     LeadActivity[]
+  notes          LeadNote[]
+  tags           LeadTagLink[]
+  followUps      LeadFollowUp[]
+  recoveries     LeadRecovery[]
+  timelineEvents LeadTimelineEvent[]
+  conversations  Conversation[]
+  visits         Visit[]
+  scoringResults LeadScoringResult[]
+  classifications AIClassification[]
+  recommendations AIRecommendation[]
+
+  // --- Índices justificados (speed-to-lead, recovery, bandeja, búsqueda) ---
+  @@index([tenantId, status, createdAt]) // bandeja de leads nuevos
+  @@index([tenantId, assignedUserId, status]) // "mis leads" del corredor
+  @@index([tenantId, currentScoreTier, lastActivityAt]) // priorización HOT primero
+  @@index([tenantId, lastActivityAt]) // sweep de Recovery (fríos 30/60/90)
+  @@index([tenantId, phone]) // deduplicación en intake
+  @@index([tenantId, email]) // deduplicación en intake
+  @@index([tenantId, createdAt]) // reporting / series temporales
+  @@map("leads")
+}
+
+model LeadScore {
+  id         String      @id @default(uuid()) @db.Uuid
+  tenantId   String      @map("tenant_id") @db.Uuid
+  leadId     String      @map("lead_id") @db.Uuid
+  scoreValue Int         @map("score_value") // 0-100
+  tier       ScoreTier
+  reasons    Json?
+  source     ScoreSource @default(HEURISTIC)
+  scoredAt   DateTime    @default(now()) @map("scored_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, leadId, scoredAt])
+  @@map("lead_scores")
+}
+
+model LeadAssignment {
+  id           String     @id @default(uuid()) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  leadId       String     @map("lead_id") @db.Uuid
+  userId       String     @map("user_id") @db.Uuid
+  assignedBy   AssignedBy @default(SYSTEM) @map("assigned_by")
+  reason       Json?
+  assignedAt   DateTime   @default(now()) @map("assigned_at")
+  unassignedAt DateTime?  @map("unassigned_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Restrict) // histórico
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, leadId, assignedAt])
+  @@index([tenantId, userId, assignedAt])
+  @@map("lead_assignments")
+}
+
+/// APPEND-ONLY: registro inmutable de interacciones. No update, no delete.
+model LeadActivity {
+  id         String       @id @default(uuid()) @db.Uuid
+  tenantId   String       @map("tenant_id") @db.Uuid
+  leadId     String       @map("lead_id") @db.Uuid
+  userId     String?      @map("user_id") @db.Uuid // NULL = sistema
+  type       ActivityType
+  summary    String?
+  metadata   Json?
+  occurredAt DateTime     @default(now()) @map("occurred_at")
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  lead Lead  @relation(fields: [leadId], references: [id], onDelete: Restrict) // conserva historial
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, leadId, occurredAt])
+  @@index([tenantId, userId, occurredAt]) // rendimiento por corredor
+  @@index([tenantId, type, occurredAt])
+  @@map("lead_activities")
+}
+
+model LeadNote {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  leadId    String    @map("lead_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  body      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at") // soft
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, leadId])
+  @@map("lead_notes")
+}
+
+model LeadTag {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  color     String   @default("#888888")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads  LeadTagLink[]
+
+  @@unique([tenantId, name])
+  @@map("lead_tags")
+}
+
+model LeadTagLink {
+  leadId String @map("lead_id") @db.Uuid
+  tagId  String @map("tag_id") @db.Uuid
+
+  lead Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag  LeadTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([leadId, tagId])
+  @@map("lead_tag_links")
+}
+
+model LeadFollowUp {
+  id           String          @id @default(uuid()) @db.Uuid
+  tenantId     String          @map("tenant_id") @db.Uuid
+  leadId       String          @map("lead_id") @db.Uuid
+  sequenceStep Int             @map("sequence_step") // día 1, 3, 7, 14
+  channel      FollowUpChannel @default(WHATSAPP)
+  scheduledAt  DateTime        @map("scheduled_at")
+  executedAt   DateTime?       @map("executed_at")
+  status       FollowUpStatus  @default(PENDING)
+  cancelReason String?         @map("cancel_reason")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt]) // runner de cadencias (cross-tenant por diseño del worker)
+  @@index([tenantId, leadId])
+  @@map("lead_follow_ups")
+}
+
+model LeadRecovery {
+  id                  String              @id @default(uuid()) @db.Uuid
+  tenantId            String              @map("tenant_id") @db.Uuid
+  leadId              String              @map("lead_id") @db.Uuid
+  inactivityThreshold InactivityThreshold @map("inactivity_threshold")
+  detectedAt          DateTime            @default(now()) @map("detected_at")
+  recoveryAction      Json?               @map("recovery_action")
+  outcome             RecoveryOutcome     @default(PENDING)
+  resolvedAt          DateTime?           @map("resolved_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, outcome])
+  @@index([tenantId, leadId, detectedAt])
+  @@map("lead_recoveries")
+}
+
+/// APPEND-ONLY: log de eventos de dominio que alimenta el timeline visual.
+/// Distinto de LeadActivity (interacciones ricas); aquí van eventos del ciclo de vida.
+model LeadTimelineEvent {
+  id        String            @id @default(uuid()) @db.Uuid
+  tenantId  String            @map("tenant_id") @db.Uuid
+  leadId    String            @map("lead_id") @db.Uuid
+  eventType TimelineEventType @map("event_type")
+  payload   Json?
+  actorId   String?           @map("actor_id") @db.Uuid // user o sistema
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Restrict) // historial
+
+  @@index([tenantId, leadId, createdAt])
+  @@map("lead_timeline_events")
+}
+
+// =============================================================================
+// COMMUNICATION DOMAIN (WhatsApp CRM)
+// =============================================================================
+
+model Conversation {
+  id              String             @id @default(uuid()) @db.Uuid
+  tenantId        String             @map("tenant_id") @db.Uuid
+  leadId          String?            @map("lead_id") @db.Uuid // NULLABLE: el chat puede llegar antes del lead
+  waContactPhone  String             @map("wa_contact_phone")
+  assignedUserId  String?            @map("assigned_user_id") @db.Uuid
+  status          ConversationStatus @default(OPEN)
+  lastMessageAt   DateTime?          @map("last_message_at")
+  windowExpiresAt DateTime?          @map("window_expires_at") // ventana 24h de WhatsApp
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  tenant       Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead         Lead?                 @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignedUser User?                 @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+  messages     Message[]
+  summaries    ConversationSummary[]
+
+  @@index([tenantId, leadId])
+  @@index([tenantId, status, lastMessageAt])
+  @@index([tenantId, waContactPhone])
+  @@index([windowExpiresAt])
+  @@map("conversations")
+}
+
+/// APPEND-ONLY: registro legal de comunicación. No update, no delete.
+model Message {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @map("tenant_id") @db.Uuid
+  conversationId String           @map("conversation_id") @db.Uuid
+  direction      MessageDirection
+  waMessageId    String?          @unique @map("wa_message_id")
+  type           MessageType      @default(TEXT)
+  body           String?
+  templateId     String?          @map("template_id") @db.Uuid
+  sentByUserId   String?          @map("sent_by_user_id") @db.Uuid // NULL = automático
+  metadata       Json?
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation Conversation     @relation(fields: [conversationId], references: [id], onDelete: Restrict) // append-only
+  template     MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  sentByUser   User?            @relation(fields: [sentByUserId], references: [id], onDelete: SetNull)
+  delivery     MessageDelivery?
+
+  @@index([tenantId, conversationId, createdAt])
+  @@map("messages")
+}
+
+model MessageDelivery {
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  messageId String        @unique @map("message_id") @db.Uuid
+  status    MessageStatus @default(QUEUED)
+  error     String?
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@map("message_deliveries")
+}
+
+model MessageTemplate {
+  id             String                @id @default(uuid()) @db.Uuid
+  tenantId       String                @map("tenant_id") @db.Uuid
+  name           String
+  waTemplateName String                @map("wa_template_name")
+  category       String?
+  body           String
+  variables      Json?
+  status         MessageTemplateStatus @default(PENDING)
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([tenantId, name])
+  @@map("message_templates")
+}
+
+// =============================================================================
+// VISIT DOMAIN
+// =============================================================================
+
+model Visit {
+  id          String      @id @default(uuid()) @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
+  leadId      String      @map("lead_id") @db.Uuid
+  propertyId  String      @map("property_id") @db.Uuid
+  userId      String      @map("user_id") @db.Uuid
+  scheduledAt DateTime    @map("scheduled_at")
+  status      VisitStatus @default(SCHEDULED)
+  notes       String?
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead         Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  property     Property       @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  reminders    VisitReminder[]
+  calendarSync CalendarSync?
+
+  @@index([tenantId, scheduledAt])
+  @@index([tenantId, userId, scheduledAt])
+  @@index([tenantId, leadId])
+  @@map("visits")
+}
+
+model VisitReminder {
+  id      String              @id @default(uuid()) @db.Uuid
+  tenantId String             @map("tenant_id") @db.Uuid
+  visitId String              @map("visit_id") @db.Uuid
+  channel FollowUpChannel     @default(WHATSAPP)
+  sendAt  DateTime            @map("send_at")
+  sentAt  DateTime?           @map("sent_at")
+  status  VisitReminderStatus @default(PENDING)
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@index([status, sendAt])
+  @@map("visit_reminders")
+}
+
+model CalendarSync {
+  id              String           @id @default(uuid()) @db.Uuid
+  tenantId        String           @map("tenant_id") @db.Uuid
+  visitId         String           @unique @map("visit_id") @db.Uuid
+  provider        CalendarProvider @default(GOOGLE)
+  externalEventId String?          @map("external_event_id")
+  syncStatus      String           @default("pending") @map("sync_status")
+  lastSyncedAt    DateTime?        @map("last_synced_at")
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_syncs")
+}
+
+// =============================================================================
+// PROPERTY DOMAIN  (SOPORTE — sin MLS, canje ni marketplace)
+// =============================================================================
+
+model Property {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  internalCode   String         @map("internal_code")
+  type           PropertyType
+  status         PropertyStatus @default(ACTIVA)
+  address        String?
+  region         String?
+  commune        String? // comuna — usada por el Lead Router
+  priceAmount    Decimal?       @map("price_amount") @db.Decimal(14, 2)
+  priceCurrency  PriceCurrency  @default(UF) @map("price_currency")
+  areaBuiltM2    Int?           @map("area_built_m2")
+  areaTotalM2    Int?           @map("area_total_m2")
+  bedrooms       Int?
+  bathrooms      Int?
+  description    String?
+  assignedUserId String?        @map("assigned_user_id") @db.Uuid
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  deletedAt      DateTime?      @map("deleted_at") // soft
+
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedUser User?             @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+  images       PropertyImage[]
+  features     PropertyFeature[]
+  visits       Visit[]
+  interestedLeads Lead[] // leads cuyo interestedPropertyId apunta aquí
+
+  @@unique([tenantId, internalCode])
+  @@index([tenantId, commune, type, status]) // filtro + routing por comuna
+  @@index([tenantId, status])
+  @@map("properties")
+}
+
+model PropertyImage {
+  id         String  @id @default(uuid()) @db.Uuid
+  tenantId   String  @map("tenant_id") @db.Uuid
+  propertyId String  @map("property_id") @db.Uuid
+  url        String
+  order      Int     @default(0)
+  isCover    Boolean @default(false) @map("is_cover")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, propertyId])
+  @@map("property_images")
+}
+
+model PropertyFeature {
+  id         String @id @default(uuid()) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  propertyId String @map("property_id") @db.Uuid
+  key        String
+  value      String
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, propertyId])
+  @@map("property_features")
+}
+
+// =============================================================================
+// AI DOMAIN  (infraestructura — cachea salidas, no es fuente de verdad)
+// =============================================================================
+
+model LeadScoringResult {
+  id        String         @id @default(uuid()) @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  leadId    String         @map("lead_id") @db.Uuid
+  provider  AIProviderType
+  model     String?
+  rawOutput Json?          @map("raw_output")
+  latencyMs Int?           @map("latency_ms")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, leadId, createdAt])
+  @@map("lead_scoring_results")
+}
+
+model AIClassification {
+  id                 String             @id @default(uuid()) @db.Uuid
+  tenantId           String             @map("tenant_id") @db.Uuid
+  leadId             String             @map("lead_id") @db.Uuid
+  classificationType ClassificationType @map("classification_type")
+  result             String
+  confidence         Float?
+  createdAt          DateTime           @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, leadId])
+  @@map("ai_classifications")
+}
+
+model ConversationSummary {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  summary        String
+  model          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, conversationId])
+  @@map("conversation_summaries")
+}
+
+model AIRecommendation {
+  id        String             @id @default(uuid()) @db.Uuid
+  tenantId  String             @map("tenant_id") @db.Uuid
+  leadId    String             @map("lead_id") @db.Uuid
+  type      RecommendationType
+  content   String
+  accepted  Boolean?
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, leadId])
+  @@map("ai_recommendations")
+}
+
+// =============================================================================
+// NOTIFICATION DOMAIN
+// =============================================================================
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String
+  body      String?
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  tenant     Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@index([tenantId, userId, readAt])
+  @@map("notifications")
+}
+
+model NotificationTemplate {
+  id        String              @id @default(uuid()) @db.Uuid
+  tenantId  String?             @map("tenant_id") @db.Uuid // NULL = sistema
+  key       String
+  channel   NotificationChannel
+  subject   String?
+  body      String
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key, channel])
+  @@map("notification_templates")
+}
+
+model NotificationDelivery {
+  id             String              @id @default(uuid()) @db.Uuid
+  tenantId       String              @map("tenant_id") @db.Uuid
+  notificationId String              @map("notification_id") @db.Uuid
+  channel        NotificationChannel
+  status         DeliveryStatus      @default(QUEUED)
+  providerId     String?             @map("provider_id")
+  sentAt         DateTime?           @map("sent_at")
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@map("notification_deliveries")
+}
+
+// =============================================================================
+// AUDIT DOMAIN  (APPEND-ONLY — trazabilidad total)
+// =============================================================================
+
+/// APPEND-ONLY: nunca se edita ni borra. Reconstruye quién hizo qué.
+model AuditLog {
+  id          String          @id @default(uuid()) @db.Uuid
+  tenantId    String?         @map("tenant_id") @db.Uuid // NULL para acciones de SUPER_ADMIN global
+  actorUserId String?         @map("actor_user_id") @db.Uuid
+  action      AuditActionType
+  entityType  String          @map("entity_type")
+  entityId    String?         @map("entity_id") @db.Uuid
+  before      Json?
+  after       Json?
+  ip          String?
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  actor  User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, entityType, createdAt])
+  @@index([tenantId, actorUserId, createdAt])
+  @@map("audit_logs")
+}
