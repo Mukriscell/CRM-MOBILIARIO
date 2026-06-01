@@ -14,7 +14,7 @@ Este directorio contiene el proceso de diseño **previo a la generación de cód
 | 3 | Análisis de competidores | ✅ Completada | [`fase-03-analisis-competidores.md`](./fase-03-analisis-competidores.md) |
 | 4 | Arquitectura completa | ✅ Completada | [`fase-04-arquitectura.md`](./fase-04-arquitectura.md) |
 | 5 | Estructura de carpetas | ✅ Completada | [`fase-05-estructura-carpetas.md`](./fase-05-estructura-carpetas.md) |
-| 6 | Modelo de base de datos | ⏳ Pendiente | — |
+| 6 | Modelo de base de datos | ✅ Completada | [`fase-06-modelo-datos.md`](./fase-06-modelo-datos.md) |
 | 7 | Diagrama entidad-relación | ⏳ Pendiente | — |
 | 8 | Prisma Schema | ⏳ Pendiente | — |
 | 9 | Diseño API REST | ⏳ Pendiente | — |
