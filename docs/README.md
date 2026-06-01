@@ -15,7 +15,7 @@ Este directorio contiene el proceso de diseño **previo a la generación de cód
 | 4 | Arquitectura completa | ✅ Completada | [`fase-04-arquitectura.md`](./fase-04-arquitectura.md) |
 | 5 | Estructura de carpetas | ✅ Completada | [`fase-05-estructura-carpetas.md`](./fase-05-estructura-carpetas.md) |
 | 6 | Modelo de base de datos | ✅ Completada | [`fase-06-modelo-datos.md`](./fase-06-modelo-datos.md) |
-| 7 | Diagrama entidad-relación | ⏳ Pendiente | — |
+| 7 | Diagrama entidad-relación | ✅ Completada | [`fase-07-diagrama-er.md`](./fase-07-diagrama-er.md) |
 | 8 | Prisma Schema | ⏳ Pendiente | — |
 | 9 | Diseño API REST | ⏳ Pendiente | — |
 | 10 | Diseño UI/UX | ⏳ Pendiente | — |
