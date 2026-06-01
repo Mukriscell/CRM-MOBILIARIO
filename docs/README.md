@@ -10,7 +10,7 @@ Este directorio contiene el proceso de diseño **previo a la generación de cód
 | Fase | Entregable | Estado | Documento |
 |------|-----------|--------|-----------|
 | 1 | Análisis del mercado inmobiliario chileno | ✅ Completada | [`fase-01-mercado-chileno.md`](./fase-01-mercado-chileno.md) |
-| 2 | Problemas actuales de las corredoras | ⏳ Pendiente | — |
+| 2 | Problemas actuales de las corredoras | ✅ Completada | [`fase-02-problemas-corredoras.md`](./fase-02-problemas-corredoras.md) |
 | 3 | Análisis de competidores | ⏳ Pendiente | — |
 | 4 | Arquitectura completa | ⏳ Pendiente | — |
 | 5 | Estructura de carpetas | ⏳ Pendiente | — |
