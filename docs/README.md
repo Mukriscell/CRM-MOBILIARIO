@@ -19,7 +19,7 @@ Este directorio contiene el proceso de diseño **previo a la generación de cód
 | 8 | Prisma Schema | ✅ Completada | [`fase-08-prisma-schema.md`](./fase-08-prisma-schema.md) · [`schema.prisma`](../apps/api/src/infrastructure/database/prisma/schema.prisma) |
 | 9 | Diseño API REST | ✅ Completada | [`fase-09-api-rest.md`](./fase-09-api-rest.md) |
 | 10 | Diseño UI/UX | ✅ Completada | [`fase-10-uiux.md`](./fase-10-uiux.md) |
-| 11 | Roadmap de desarrollo | ⏳ Pendiente | — |
+| 11 | Roadmap de desarrollo | ✅ Completada | [`fase-11-roadmap.md`](./fase-11-roadmap.md) |
 | 12 | Definición del MVP | ⏳ Pendiente | — |
 | 13 | Generación del sistema módulo por módulo | ⏳ Pendiente | — |
 
