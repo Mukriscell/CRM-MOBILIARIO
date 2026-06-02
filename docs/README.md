@@ -21,7 +21,7 @@ Este directorio contiene el proceso de diseño **previo a la generación de cód
 | 10 | Diseño UI/UX | ✅ Completada | [`fase-10-uiux.md`](./fase-10-uiux.md) |
 | 11 | Roadmap de desarrollo | ✅ Completada | [`fase-11-roadmap.md`](./fase-11-roadmap.md) |
 | 12 | Definición del MVP | ✅ Completada | [`fase-12-mvp.md`](./fase-12-mvp.md) |
-| 13 | Generación del sistema módulo por módulo | ⏳ Pendiente | — |
+| 13 | Generación del sistema módulo por módulo | 🚧 En curso — H1 ✅ | [`fase-13-h1.md`](./fase-13-h1.md) |
 
 ## Stack objetivo
 

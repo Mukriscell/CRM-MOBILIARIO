@@ -9,7 +9,7 @@ describe("normalizeChileanPhone", () => {
     expect(normalizeChileanPhone("+56 9 8765 4321")).toBe("+56987654321");
   });
   it("normaliza 8 dígitos asumiendo móvil", () => {
-    expect(normalizeChileanPhone("87654321")).toBe("+5698765432");
+    expect(normalizeChileanPhone("87654321")).toBe("+56987654321");
   });
   it("devuelve null para entrada inválida", () => {
     expect(normalizeChileanPhone("")).toBeNull();

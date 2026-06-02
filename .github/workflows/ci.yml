@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "claude/**"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @clientra/api db:generate
+
+      - name: Typecheck
+        run: |
+          pnpm --filter @clientra/shared-types typecheck
+          pnpm --filter @clientra/api typecheck
+          pnpm --filter @clientra/web typecheck
+
+      - name: Test
+        run: pnpm --filter @clientra/shared-utils test
+
+      - name: Build
+        run: pnpm --filter @clientra/api build
