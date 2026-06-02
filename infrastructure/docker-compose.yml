@@ -1,0 +1,32 @@
+# Desarrollo local: Postgres + Redis. La app (api/web) se levanta con pnpm dev.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: clientra-postgres
+    environment:
+      POSTGRES_USER: clientra
+      POSTGRES_PASSWORD: clientra
+      POSTGRES_DB: clientra
+    ports:
+      - "5432:5432"
+    volumes:
+      - clientra_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clientra"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: clientra-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  clientra_pgdata:
