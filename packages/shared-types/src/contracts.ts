@@ -4,7 +4,7 @@
  * infiere los tipos. Solo entran contratos que AMBOS consumen (regla del doble consumidor).
  */
 import { z } from "zod";
-import { LeadSource } from "./enums.js";
+import { LeadSource } from "./enums";
 
 /** Contacto mínimo: debe traer al menos teléfono o email (anti "lead vacío"). */
 export const ContactSchema = z

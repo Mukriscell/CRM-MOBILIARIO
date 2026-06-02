@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
-import { Logger, ValidationPipe } from "@nestjs/common";
+import { Logger } from "@nestjs/common";
 import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./shared/filters/global-exception.filter";
 
@@ -10,8 +10,8 @@ async function bootstrap() {
   // Prefijo y versionado de la API (FASE 9: /api/v1)
   app.setGlobalPrefix("api/v1");
 
-  // Validación de entrada en el borde
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  // La validación de entrada se hace con Zod (ZodValidationPipe) por endpoint;
+  // no usamos el ValidationPipe de class-validator.
 
   // Manejo de errores global (mapea excepciones de dominio → HTTP)
   app.useGlobalFilters(new GlobalExceptionFilter());

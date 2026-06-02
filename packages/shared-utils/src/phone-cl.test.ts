@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeChileanPhone, isValidChileanPhone } from "./phone-cl.js";
+import { normalizeChileanPhone, isValidChileanPhone } from "./phone-cl";
 
 describe("normalizeChileanPhone", () => {
   it("normaliza un móvil de 9 dígitos", () => {

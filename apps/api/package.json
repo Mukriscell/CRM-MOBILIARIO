@@ -12,7 +12,8 @@
     "db:generate": "prisma generate --schema src/infrastructure/database/prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema src/infrastructure/database/prisma/schema.prisma",
     "db:deploy": "prisma migrate deploy --schema src/infrastructure/database/prisma/schema.prisma",
-    "db:seed": "tsx src/infrastructure/database/prisma/seed.ts"
+    "db:seed": "tsx src/infrastructure/database/prisma/seed.ts",
+    "test:e2e": "node scripts/e2e-h1.cjs"
   },
   "dependencies": {
     "@clientra/shared-types": "workspace:*",

@@ -9,10 +9,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   const plan = await prisma.plan.upsert({
-    where: { id: "00000000-0000-0000-0000-0000000000p1" },
+    where: { id: "11111111-1111-1111-1111-111111111111" },
     update: {},
     create: {
-      id: "00000000-0000-0000-0000-0000000000p1",
+      id: "11111111-1111-1111-1111-111111111111",
       tier: "PROFESSIONAL",
       name: "Professional",
       priceClp: 79000,
