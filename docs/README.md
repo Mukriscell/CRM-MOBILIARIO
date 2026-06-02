@@ -20,7 +20,7 @@ Este directorio contiene el proceso de diseño **previo a la generación de cód
 | 9 | Diseño API REST | ✅ Completada | [`fase-09-api-rest.md`](./fase-09-api-rest.md) |
 | 10 | Diseño UI/UX | ✅ Completada | [`fase-10-uiux.md`](./fase-10-uiux.md) |
 | 11 | Roadmap de desarrollo | ✅ Completada | [`fase-11-roadmap.md`](./fase-11-roadmap.md) |
-| 12 | Definición del MVP | ⏳ Pendiente | — |
+| 12 | Definición del MVP | ✅ Completada | [`fase-12-mvp.md`](./fase-12-mvp.md) |
 | 13 | Generación del sistema módulo por módulo | ⏳ Pendiente | — |
 
 ## Stack objetivo
