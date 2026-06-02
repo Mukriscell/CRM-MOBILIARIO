@@ -27,6 +27,11 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @clientra/api db:generate
 
+      - name: Build shared packages
+        run: |
+          pnpm --filter @clientra/shared-types build
+          pnpm --filter @clientra/shared-utils build
+
       - name: Typecheck
         run: |
           pnpm --filter @clientra/shared-types typecheck
