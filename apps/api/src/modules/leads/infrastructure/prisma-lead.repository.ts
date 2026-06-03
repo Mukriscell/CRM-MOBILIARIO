@@ -6,6 +6,7 @@ import {
   ILeadRepository,
   LeadListFilters,
   LeadListResult,
+  LeadStats,
 } from "../domain/lead.repository.interface";
 import { decodeCursor, encodeCursor } from "./cursor";
 
@@ -87,6 +88,37 @@ export class PrismaLeadRepository implements ILeadRepository {
       where: { id: leadId, tenantId },
       data: { lastActivityAt: occurredAt },
     });
+  }
+
+  async stats(tenantId: string): Promise<LeadStats> {
+    const [total, responded, respondedLeads] = await Promise.all([
+      this.prisma.lead.count({ where: { tenantId, deletedAt: null } }),
+      this.prisma.lead.count({ where: { tenantId, deletedAt: null, firstResponseAt: { not: null } } }),
+      this.prisma.lead.findMany({
+        where: { tenantId, deletedAt: null, firstResponseAt: { not: null } },
+        select: { createdAt: true, firstResponseAt: true },
+      }),
+    ]);
+
+    let avgTtfrSeconds: number | null = null;
+    if (respondedLeads.length > 0) {
+      const totalSeconds = respondedLeads.reduce((acc, l) => {
+        return acc + (l.firstResponseAt!.getTime() - l.createdAt.getTime()) / 1000;
+      }, 0);
+      avgTtfrSeconds = Math.round(totalSeconds / respondedLeads.length);
+    }
+
+    return { total, responded, unresponded: total - responded, avgTtfrSeconds };
+  }
+
+  async markFirstResponse(tenantId: string, leadId: string, at: Date): Promise<Lead | null> {
+    // Solo fija firstResponseAt si está NULL (idempotente: la primera respuesta gana)
+    const updated = await this.prisma.lead.updateMany({
+      where: { id: leadId, tenantId, firstResponseAt: null },
+      data: { firstResponseAt: at, lastActivityAt: at },
+    });
+    if (updated.count === 0) return null;
+    return this.prisma.lead.findFirst({ where: { id: leadId, tenantId } });
   }
 
   async assign(

@@ -10,6 +10,7 @@ import { UsersModule } from "./modules/users/users.module";
 import { LeadsModule } from "./modules/leads/leads.module";
 import { LeadIntakeModule } from "./modules/lead-intake/lead-intake.module";
 import { LeadRouterModule } from "./modules/lead-router/lead-router.module";
+import { MessagingModule } from "./modules/messaging/messaging.module";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { LeadRouterModule } from "./modules/lead-router/lead-router.module";
     LeadsModule,
     LeadIntakeModule,
     LeadRouterModule,
+    MessagingModule,
   ],
 })
 export class AppModule {}

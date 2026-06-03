@@ -4,6 +4,7 @@ import { JwtAuthGuard } from "../../auth/infrastructure/jwt-auth.guard";
 import { TenantContextService } from "../../../shared/context/tenant-context.service";
 import { ListLeadsUseCase } from "../application/list-leads.use-case";
 import { GetLeadUseCase } from "../application/get-lead.use-case";
+import { GetLeadStatsUseCase } from "../application/get-lead-stats.use-case";
 import { LeadResponse } from "../application/lead-response.dto";
 
 /**
@@ -16,6 +17,7 @@ export class LeadController {
   constructor(
     private readonly listLeads: ListLeadsUseCase,
     private readonly getLead: GetLeadUseCase,
+    private readonly getStats: GetLeadStatsUseCase,
     private readonly tenantContext: TenantContextService,
   ) {}
 
@@ -35,6 +37,12 @@ export class LeadController {
       cursor ?? null,
       limit ? Number(limit) : 25,
     );
+  }
+
+  @Get("stats")
+  async stats() {
+    const tenantId = this.tenantContext.requireTenantId();
+    return { data: await this.getStats.execute(tenantId) };
   }
 
   @Get(":id")
