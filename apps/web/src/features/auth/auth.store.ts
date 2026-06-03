@@ -21,16 +21,18 @@ export const useAuth = create<AuthState>((set) => ({
   user: null,
   hydrated: false,
   login: async (email, password) => {
-    const res = await apiFetch<{ data: { accessToken: string; user: AuthUser } }>("/auth/login", {
+    const res = await apiFetch<{ data: { accessToken: string; refreshToken: string; user: AuthUser } }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
     window.localStorage.setItem("clientra_token", res.data.accessToken);
+    window.localStorage.setItem("clientra_refresh_token", res.data.refreshToken);
     window.localStorage.setItem("clientra_user", JSON.stringify(res.data.user));
     set({ user: res.data.user });
   },
   logout: () => {
     window.localStorage.removeItem("clientra_token");
+    window.localStorage.removeItem("clientra_refresh_token");
     window.localStorage.removeItem("clientra_user");
     set({ user: null });
   },

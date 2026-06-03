@@ -91,13 +91,17 @@ export class PrismaLeadRepository implements ILeadRepository {
   }
 
   async stats(tenantId: string): Promise<LeadStats> {
-    const [total, responded, respondedLeads] = await Promise.all([
-      this.prisma.lead.count({ where: { tenantId, deletedAt: null } }),
-      this.prisma.lead.count({ where: { tenantId, deletedAt: null, firstResponseAt: { not: null } } }),
+    const base = { tenantId, deletedAt: null };
+    const [total, responded, respondedLeads, hot, warm, cold] = await Promise.all([
+      this.prisma.lead.count({ where: base }),
+      this.prisma.lead.count({ where: { ...base, firstResponseAt: { not: null } } }),
       this.prisma.lead.findMany({
-        where: { tenantId, deletedAt: null, firstResponseAt: { not: null } },
+        where: { ...base, firstResponseAt: { not: null } },
         select: { createdAt: true, firstResponseAt: true },
       }),
+      this.prisma.lead.count({ where: { ...base, currentScoreTier: "HOT" } }),
+      this.prisma.lead.count({ where: { ...base, currentScoreTier: "WARM" } }),
+      this.prisma.lead.count({ where: { ...base, currentScoreTier: "COLD" } }),
     ]);
 
     let avgTtfrSeconds: number | null = null;
@@ -108,7 +112,7 @@ export class PrismaLeadRepository implements ILeadRepository {
       avgTtfrSeconds = Math.round(totalSeconds / respondedLeads.length);
     }
 
-    return { total, responded, unresponded: total - responded, avgTtfrSeconds };
+    return { total, responded, unresponded: total - responded, avgTtfrSeconds, hot, warm, cold };
   }
 
   async markFirstResponse(tenantId: string, leadId: string, at: Date): Promise<Lead | null> {

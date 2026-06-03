@@ -25,6 +25,6 @@ import { LeadController } from "./presentation/lead.controller";
     GetLeadUseCase,
     GetLeadStatsUseCase,
   ],
-  exports: [CreateLeadUseCase, AssignLeadUseCase],
+  exports: [CreateLeadUseCase, AssignLeadUseCase, GetLeadUseCase, LEAD_REPOSITORY],
 })
 export class LeadsModule {}

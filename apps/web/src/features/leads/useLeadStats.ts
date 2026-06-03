@@ -7,6 +7,9 @@ export interface LeadStats {
   responded: number;
   unresponded: number;
   avgTtfrSeconds: number | null;
+  hot: number;
+  warm: number;
+  cold: number;
 }
 
 export function useLeadStats() {

@@ -9,7 +9,7 @@ export class PrismaUserRepository implements IUserRepository {
 
   findByEmail(tenantId: string | null, email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
-      where: { email, tenantId, deletedAt: null },
+      where: { email, ...(tenantId !== null && { tenantId }), deletedAt: null },
     });
   }
 
@@ -19,7 +19,7 @@ export class PrismaUserRepository implements IUserRepository {
 
   findActiveBrokers(tenantId: string): Promise<User[]> {
     return this.prisma.user.findMany({
-      where: { tenantId, status: "ACTIVE", role: { in: ["CORREDOR", "ADMIN"] }, deletedAt: null },
+      where: { tenantId, status: "ACTIVE", role: "CORREDOR", deletedAt: null },
     });
   }
 }

@@ -32,7 +32,10 @@ export interface LeadStats {
   total: number;
   unresponded: number;
   responded: number;
-  avgTtfrSeconds: number | null; // promedio de tiempo a primera respuesta
+  avgTtfrSeconds: number | null;
+  hot: number;
+  warm: number;
+  cold: number;
 }
 
 export interface ILeadRepository {

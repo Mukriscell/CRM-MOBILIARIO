@@ -35,17 +35,20 @@ services:
     container_name: clientra-api
     environment:
       NODE_ENV: production
-      PORT: 4000
-      DATABASE_URL: postgresql://clientra:clientra@postgres:5432/clientra
+      API_PORT: 4000
+      DATABASE_URL: postgresql://clientra:clientra@postgres:5432/clientra?schema=public
       POSTGRES_HOST: postgres
       POSTGRES_USER: clientra
       POSTGRES_DB: clientra
-      JWT_SECRET: clientra-jwt-secret-demo-local
+      JWT_ACCESS_SECRET: clientra-jwt-secret-demo-local
       JWT_REFRESH_SECRET: clientra-jwt-refresh-secret-demo-local
-      JWT_EXPIRES_IN: 24h
-      JWT_REFRESH_EXPIRES_IN: 7d
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 7d
       REDIS_URL: redis://redis:6379
       CORS_ORIGINS: http://localhost:3000
+      AI_PROVIDER: heuristic
+      WHATSAPP_VERIFY_TOKEN: clientra-verify
+      WHATSAPP_DEFAULT_TENANT_SLUG: demo
     ports:
       - "4000:4000"
     depends_on:

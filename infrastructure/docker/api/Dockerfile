@@ -12,7 +12,7 @@ RUN pnpm --filter @clientra/api db:generate
 RUN pnpm --filter @clientra/api build
 
 FROM node:22-alpine AS runner
-RUN apk add --no-cache postgresql-client
+RUN apk add --no-cache postgresql-client openssl
 RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
 WORKDIR /app
 ENV NODE_ENV=production

@@ -36,3 +36,14 @@ export class LeadAssignedEvent implements DomainEvent {
     readonly assignedBy: "SYSTEM" | "MANUAL",
   ) {}
 }
+
+export class LeadScoredEvent implements DomainEvent {
+  readonly name = "lead.scored";
+  readonly occurredAt = new Date();
+  constructor(
+    readonly tenantId: string,
+    readonly leadId: string,
+    readonly scoreValue: number,
+    readonly tier: string,
+  ) {}
+}

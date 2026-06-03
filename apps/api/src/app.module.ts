@@ -11,6 +11,7 @@ import { LeadsModule } from "./modules/leads/leads.module";
 import { LeadIntakeModule } from "./modules/lead-intake/lead-intake.module";
 import { LeadRouterModule } from "./modules/lead-router/lead-router.module";
 import { MessagingModule } from "./modules/messaging/messaging.module";
+import { LeadScoringModule } from "./modules/lead-scoring/lead-scoring.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MessagingModule } from "./modules/messaging/messaging.module";
     LeadIntakeModule,
     LeadRouterModule,
     MessagingModule,
+    LeadScoringModule,
   ],
 })
 export class AppModule {}

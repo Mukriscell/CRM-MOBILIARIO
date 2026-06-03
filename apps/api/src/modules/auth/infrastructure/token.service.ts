@@ -29,4 +29,8 @@ export class TokenService {
   verifyAccess(token: string): JwtPayload {
     return this.jwt.verify<JwtPayload>(token, { secret: process.env.JWT_ACCESS_SECRET });
   }
+
+  verifyRefresh(token: string): JwtPayload {
+    return this.jwt.verify<JwtPayload>(token, { secret: process.env.JWT_REFRESH_SECRET });
+  }
 }

@@ -22,7 +22,7 @@ export class LeadCreatedListener {
   @OnEvent("lead.created")
   async handle(event: LeadCreatedEvent): Promise<void> {
     const brokers = await this.users.findActiveBrokers(event.tenantId);
-    const broker = this.routing.pickBroker(brokers);
+    const broker = this.routing.pickBroker(brokers, event.tenantId);
     if (!broker) {
       this.logger.warn(`Sin corredores disponibles para tenant ${event.tenantId}; lead ${event.leadId} sin asignar`);
       return;

@@ -8,10 +8,14 @@ import { User } from "@prisma/client";
  */
 @Injectable()
 export class RoutingRulesService {
-  /** Elige el corredor con menor carga (placeholder: aleatorio estable por ahora). */
-  pickBroker(brokers: User[]): User | null {
+  private readonly rrIndex = new Map<string, number>();
+
+  /** Elige el corredor por round-robin, rotando por tenant. */
+  pickBroker(brokers: User[], tenantId: string): User | null {
     if (brokers.length === 0) return null;
-    // En H1, round-robin simple por orden de creación; la carga real se evalúa en H2.
-    return brokers[0];
+    const last = this.rrIndex.get(tenantId) ?? -1;
+    const next = (last + 1) % brokers.length;
+    this.rrIndex.set(tenantId, next);
+    return brokers[next];
   }
 }
