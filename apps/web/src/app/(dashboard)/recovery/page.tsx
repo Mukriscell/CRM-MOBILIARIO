@@ -142,7 +142,11 @@ export default function RecoveryPage() {
                       Reactivar
                     </button>
                     <button
-                      onClick={() => archive.mutate(c.leadId)}
+                      onClick={() => {
+                        if (confirm(`¿Archivar a ${leadName(c)}? Quedará marcado como Perdido.`)) {
+                          archive.mutate(c.leadId);
+                        }
+                      }}
                       disabled={archive.isPending}
                       className="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600 disabled:opacity-50"
                     >

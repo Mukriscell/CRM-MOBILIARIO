@@ -47,6 +47,9 @@ export function useReactivateLead() {
       void qc.invalidateQueries({ queryKey: ["recovery-stats"] });
       void qc.invalidateQueries({ queryKey: ["leads"] });
     },
+    onError: (err: Error) => {
+      alert(`Error al reactivar: ${err.message}`);
+    },
   });
 }
 
@@ -58,6 +61,9 @@ export function useArchiveLead() {
       void qc.invalidateQueries({ queryKey: ["recovery-candidates"] });
       void qc.invalidateQueries({ queryKey: ["recovery-stats"] });
       void qc.invalidateQueries({ queryKey: ["leads"] });
+    },
+    onError: (err: Error) => {
+      alert(`Error al archivar: ${err.message}`);
     },
   });
 }

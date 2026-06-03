@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { ClsModule } from "nestjs-cls";
 import { BullModule } from "@nestjs/bullmq";
 import { DatabaseModule } from "./infrastructure/database/database.module";
@@ -18,6 +19,7 @@ import { LeadRecoveryModule } from "./modules/lead-recovery/lead-recovery.module
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     // Contexto por request (tenant + user) vía AsyncLocalStorage
     ClsModule.forRoot({ global: true, middleware: { mount: true } }),
     // Cola BullMQ global — conexión Redis compartida
