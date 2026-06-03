@@ -1,0 +1,75 @@
+# CLIENTRA — Full-stack local demo
+# Uso: docker compose up --build
+# Web: http://localhost:3000  |  API: http://localhost:4000/api/v1
+# Login: admin@demo.cl / clientra123
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: clientra-postgres
+    environment:
+      POSTGRES_USER: clientra
+      POSTGRES_PASSWORD: clientra
+      POSTGRES_DB: clientra
+    volumes:
+      - clientra_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clientra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: clientra-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api/Dockerfile
+    container_name: clientra-api
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://clientra:clientra@postgres:5432/clientra
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: clientra
+      POSTGRES_DB: clientra
+      JWT_SECRET: clientra-jwt-secret-demo-local
+      JWT_REFRESH_SECRET: clientra-jwt-refresh-secret-demo-local
+      JWT_EXPIRES_IN: 24h
+      JWT_REFRESH_EXPIRES_IN: 7d
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+    container_name: clientra-web
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: on-failure
+
+volumes:
+  clientra_pgdata:
