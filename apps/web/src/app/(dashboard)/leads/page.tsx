@@ -28,7 +28,13 @@ export default function LeadsPage() {
       </header>
 
       {isLoading && <p className="text-zinc-400">Cargando…</p>}
-      {error && <p className="text-urgent">{(error as Error).message}</p>}
+      {error && (
+        <div className="rounded-xl border border-urgent/40 bg-zinc-900 p-5 text-sm">
+          <p className="font-semibold text-urgent">No se pudo cargar los leads</p>
+          <p className="mt-1 text-zinc-400">{(error as Error).message}</p>
+          <p className="mt-2 text-zinc-500 text-xs">Verifica que la API esté corriendo en <code>localhost:4000</code>.</p>
+        </div>
+      )}
 
       {data && data.data.length === 0 && (
         <p className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 text-center text-zinc-400">
