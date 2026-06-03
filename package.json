@@ -1,0 +1,25 @@
+{
+  "name": "clientra",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CLIENTRA — Plataforma de Conversión y Recuperación de Leads Inmobiliarios",
+  "packageManager": "pnpm@9.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm --filter \"./packages/*\" build && pnpm --filter \"./apps/*\" build",
+    "lint": "pnpm --recursive lint",
+    "typecheck": "pnpm --recursive typecheck",
+    "test": "pnpm --recursive test",
+    "db:migrate": "pnpm --filter @clientra/api db:migrate",
+    "db:seed": "pnpm --filter @clientra/api db:seed",
+    "db:generate": "pnpm --filter @clientra/api db:generate"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4"
+  }
+}
