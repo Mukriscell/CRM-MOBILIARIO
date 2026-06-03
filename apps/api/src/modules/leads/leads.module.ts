@@ -6,6 +6,7 @@ import { CreateLeadUseCase } from "./application/create-lead.use-case";
 import { AssignLeadUseCase } from "./application/assign-lead.use-case";
 import { ListLeadsUseCase } from "./application/list-leads.use-case";
 import { GetLeadUseCase } from "./application/get-lead.use-case";
+import { GetLeadStatsUseCase } from "./application/get-lead-stats.use-case";
 import { LeadController } from "./presentation/lead.controller";
 
 /**
@@ -22,6 +23,7 @@ import { LeadController } from "./presentation/lead.controller";
     AssignLeadUseCase,
     ListLeadsUseCase,
     GetLeadUseCase,
+    GetLeadStatsUseCase,
   ],
   exports: [CreateLeadUseCase, AssignLeadUseCase],
 })

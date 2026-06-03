@@ -28,6 +28,13 @@ export interface LeadListResult {
   hasMore: boolean;
 }
 
+export interface LeadStats {
+  total: number;
+  unresponded: number;
+  responded: number;
+  avgTtfrSeconds: number | null; // promedio de tiempo a primera respuesta
+}
+
 export interface ILeadRepository {
   create(data: CreateLeadData): Promise<Lead>;
   /** Deduplicación: lead activo del tenant con el mismo phone o email (FASE 9 §9). */
@@ -36,5 +43,9 @@ export interface ILeadRepository {
   listByCursor(tenantId: string, filters: LeadListFilters, cursor: string | null, limit: number): Promise<LeadListResult>;
   /** Registra una nueva consulta sobre un lead existente (merge en dedup). */
   touchActivity(tenantId: string, leadId: string, occurredAt: Date): Promise<void>;
+  /** Marca el tiempo de primera respuesta (TTFR) si aún no está fijado. Devuelve el lead o null si ya tenía. */
+  markFirstResponse(tenantId: string, leadId: string, at: Date): Promise<Lead | null>;
+  /** Métricas de conversión del tenant (totales + TTFR medio). */
+  stats(tenantId: string): Promise<LeadStats>;
   assign(tenantId: string, leadId: string, userId: string, by: "SYSTEM" | "MANUAL", reason?: unknown): Promise<Lead>;
 }

@@ -15,6 +15,17 @@ export class LeadCreatedEvent implements DomainEvent {
   ) {}
 }
 
+export class LeadFirstRespondedEvent implements DomainEvent {
+  readonly name = "lead.first_responded";
+  readonly occurredAt = new Date();
+  constructor(
+    readonly tenantId: string,
+    readonly leadId: string,
+    readonly ttfrSeconds: number,
+    readonly respondedByUserId: string | null,
+  ) {}
+}
+
 export class LeadAssignedEvent implements DomainEvent {
   readonly name = "lead.assigned";
   readonly occurredAt = new Date();
