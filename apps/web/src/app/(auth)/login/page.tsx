@@ -1,15 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth.store";
 
 export default function LoginPage() {
   const router = useRouter();
-  const login = useAuth((s) => s.login);
+  const { login, hydrate, hydrated, user } = useAuth();
   const [email, setEmail] = useState("admin@demo.cl");
   const [password, setPassword] = useState("clientra123");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Si ya hay sesión, no mostrar el login: ir al inicio.
+  useEffect(() => hydrate(), [hydrate]);
+  useEffect(() => {
+    if (hydrated && user) router.replace("/");
+  }, [hydrated, user, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,7 +23,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(email, password);
-      router.push("/leads");
+      router.push("/");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -54,6 +60,11 @@ export default function LoginPage() {
         >
           {loading ? "Ingresando…" : "Ingresar"}
         </button>
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-400">
+          <p className="mb-1 font-medium text-zinc-300">Credenciales de la demo</p>
+          <p>Email: <span className="text-zinc-200">admin@demo.cl</span></p>
+          <p>Contraseña: <span className="text-zinc-200">clientra123</span></p>
+        </div>
       </form>
     </main>
   );

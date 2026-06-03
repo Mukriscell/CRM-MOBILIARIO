@@ -11,6 +11,7 @@ interface AuthUser {
 
 interface AuthState {
   user: AuthUser | null;
+  hydrated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hydrate: () => void;
@@ -18,6 +19,7 @@ interface AuthState {
 
 export const useAuth = create<AuthState>((set) => ({
   user: null,
+  hydrated: false,
   login: async (email, password) => {
     const res = await apiFetch<{ data: { accessToken: string; user: AuthUser } }>("/auth/login", {
       method: "POST",
@@ -34,6 +36,6 @@ export const useAuth = create<AuthState>((set) => ({
   },
   hydrate: () => {
     const raw = typeof window !== "undefined" ? window.localStorage.getItem("clientra_user") : null;
-    if (raw) set({ user: JSON.parse(raw) as AuthUser });
+    set({ user: raw ? (JSON.parse(raw) as AuthUser) : null, hydrated: true });
   },
 }));

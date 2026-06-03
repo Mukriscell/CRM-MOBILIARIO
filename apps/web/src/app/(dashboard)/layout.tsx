@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth.store";
 
 // Navegación lead-céntrica (FASE 10): Propiedades casi al final (soporte).
 const NAV = [
-  { href: "/", label: "⚡ Conversión" },
+  { href: "/", label: "⚡ Inicio" },
   { href: "/leads", label: "📥 Bandeja de Leads" },
   { href: "/whatsapp", label: "💬 Inbox WhatsApp" },
   { href: "/pipeline", label: "🪜 Pipeline" },
@@ -16,8 +17,29 @@ const NAV = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, hydrate, logout } = useAuth();
+  const router = useRouter();
+  const { user, hydrated, hydrate, logout } = useAuth();
+
   useEffect(() => hydrate(), [hydrate]);
+
+  // Guard: si tras hidratar no hay sesión, ir al login.
+  useEffect(() => {
+    if (hydrated && !user) router.replace("/login");
+  }, [hydrated, user, router]);
+
+  const handleLogout = () => {
+    logout();
+    router.replace("/login");
+  };
+
+  // Evita el "flash" del dashboard antes de redirigir.
+  if (!hydrated || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-zinc-500">
+        Cargando…
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -34,8 +56,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           ))}
         </nav>
-        <button onClick={logout} className="mt-6 px-3 text-xs text-zinc-500 hover:text-zinc-300">
-          {user ? `Salir (${user.firstName})` : "Salir"}
+        <button onClick={handleLogout} className="mt-6 px-3 text-xs text-zinc-500 hover:text-zinc-300">
+          Salir ({user.firstName})
         </button>
       </aside>
       <main className="flex-1 p-6">{children}</main>
