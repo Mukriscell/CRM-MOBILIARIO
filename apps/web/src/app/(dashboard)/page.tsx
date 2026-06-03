@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useAuth } from "@/features/auth/auth.store";
 import { useLeadStats, formatTtfr } from "@/features/leads/useLeadStats";
 import { useLeads } from "@/features/leads/useLeads";
+import { useFollowUpStats } from "@/features/follow-ups/useFollowUps";
 
 /**
  * Inicio (FASE 10) — pensado para que una corredora entienda el valor en 30s:
@@ -12,8 +13,10 @@ export default function DashboardHome() {
   const user = useAuth((s) => s.user);
   const { data: statsData } = useLeadStats();
   const { data: leadsData } = useLeads({ unresponded: true });
+  const { data: fuStatsData } = useFollowUpStats();
 
   const stats = statsData?.data;
+  const fuStats = fuStatsData?.data;
   const sinRespuesta = stats?.unresponded ?? 0;
   const ttfr = stats?.avgTtfrSeconds ?? null;
 
@@ -94,6 +97,36 @@ export default function DashboardHome() {
           <div className="text-sm text-zinc-400">COLD — Baja probabilidad</div>
           <div className="mt-1 text-3xl font-bold text-zinc-400">{stats?.cold ?? 0}</div>
           <div className="mt-2 text-xs text-zinc-500">Pendientes de calificación</div>
+        </Link>
+      </div>
+
+      <h2 className="mt-8 mb-3 text-sm font-semibold text-zinc-400 uppercase tracking-wider">Seguimientos automáticos</h2>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Link
+          href="/seguimientos?filter=pending"
+          className="rounded-xl border border-amber-800/50 bg-zinc-900 p-5 hover:border-amber-600"
+        >
+          <div className="text-sm text-zinc-400">Pendientes</div>
+          <div className="mt-1 text-3xl font-bold text-amber-400">{fuStats?.pending ?? 0}</div>
+          <div className="mt-2 text-xs text-zinc-500">Programados por enviar</div>
+        </Link>
+
+        <Link
+          href="/seguimientos?filter=overdue"
+          className="rounded-xl border border-red-800/50 bg-zinc-900 p-5 hover:border-red-600"
+        >
+          <div className="text-sm text-zinc-400">Vencidos</div>
+          <div className="mt-1 text-3xl font-bold text-red-400">{fuStats?.overdue ?? 0}</div>
+          <div className="mt-2 text-xs text-zinc-500">Requieren acción ahora</div>
+        </Link>
+
+        <Link
+          href="/seguimientos"
+          className="rounded-xl border border-emerald-800/50 bg-zinc-900 p-5 hover:border-emerald-600"
+        >
+          <div className="text-sm text-zinc-400">% Cumplimiento</div>
+          <div className="mt-1 text-3xl font-bold text-emerald-400">{fuStats?.compliancePct ?? 100}%</div>
+          <div className="mt-2 text-xs text-zinc-500">{fuStats?.executed ?? 0} ejecutados</div>
         </Link>
       </div>
 

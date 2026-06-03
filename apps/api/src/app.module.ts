@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ClsModule } from "nestjs-cls";
+import { BullModule } from "@nestjs/bullmq";
 import { DatabaseModule } from "./infrastructure/database/database.module";
 import { HealthModule } from "./infrastructure/health/health.module";
 import { ContextModule } from "./shared/context/context.module";
@@ -12,11 +13,26 @@ import { LeadIntakeModule } from "./modules/lead-intake/lead-intake.module";
 import { LeadRouterModule } from "./modules/lead-router/lead-router.module";
 import { MessagingModule } from "./modules/messaging/messaging.module";
 import { LeadScoringModule } from "./modules/lead-scoring/lead-scoring.module";
+import { FollowUpModule } from "./modules/follow-up/follow-up.module";
 
 @Module({
   imports: [
     // Contexto por request (tenant + user) vía AsyncLocalStorage
     ClsModule.forRoot({ global: true, middleware: { mount: true } }),
+    // Cola BullMQ global — conexión Redis compartida
+    BullModule.forRootAsync({
+      useFactory: () => {
+        const url = process.env.REDIS_URL ?? "redis://localhost:6379";
+        const parsed = new URL(url);
+        return {
+          connection: {
+            host: parsed.hostname,
+            port: parseInt(parsed.port || "6379"),
+            maxRetriesPerRequest: null,
+          },
+        };
+      },
+    }),
     DatabaseModule,
     HealthModule,
     ContextModule,
@@ -29,6 +45,7 @@ import { LeadScoringModule } from "./modules/lead-scoring/lead-scoring.module";
     LeadRouterModule,
     MessagingModule,
     LeadScoringModule,
+    FollowUpModule,
   ],
 })
 export class AppModule {}

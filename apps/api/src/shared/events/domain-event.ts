@@ -47,3 +47,12 @@ export class LeadScoredEvent implements DomainEvent {
     readonly tier: string,
   ) {}
 }
+
+export class InboundMessageReceivedEvent implements DomainEvent {
+  readonly name = "lead.message.received";
+  readonly occurredAt = new Date();
+  constructor(
+    readonly tenantId: string,
+    readonly leadId: string,
+  ) {}
+}

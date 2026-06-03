@@ -18,6 +18,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app /app
 COPY infrastructure/docker/api/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r//' /entrypoint.sh && chmod +x /entrypoint.sh
 EXPOSE 4000
 ENTRYPOINT ["/entrypoint.sh"]

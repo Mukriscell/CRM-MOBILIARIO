@@ -5,6 +5,8 @@ import {
   IConversationRepository,
 } from "../domain/conversation.repository.interface";
 import { ILeadRepository, LEAD_REPOSITORY } from "../../leads/domain/lead.repository.interface";
+import { DomainEventBus } from "../../../shared/events/domain-event-bus";
+import { InboundMessageReceivedEvent } from "../../../shared/events/domain-event";
 
 const WHATSAPP_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -26,6 +28,7 @@ export class ReceiveInboundMessageUseCase {
   constructor(
     @Inject(CONVERSATION_REPOSITORY) private readonly conversations: IConversationRepository,
     @Inject(LEAD_REPOSITORY) private readonly leads: ILeadRepository,
+    private readonly events: DomainEventBus,
   ) {}
 
   async execute(input: InboundMessageInput): Promise<void> {
@@ -59,6 +62,7 @@ export class ReceiveInboundMessageUseCase {
 
     if (lead) {
       await this.leads.touchActivity(input.tenantId, lead.id, now);
+      this.events.publish(new InboundMessageReceivedEvent(input.tenantId, lead.id));
     }
 
     this.logger.debug(`Mensaje entrante de ${phone} registrado (lead ${lead?.id ?? "sin vincular"})`);
