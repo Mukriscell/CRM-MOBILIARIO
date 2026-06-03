@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/auth.store";
 import { useLeadStats, formatTtfr } from "@/features/leads/useLeadStats";
 import { useLeads } from "@/features/leads/useLeads";
 import { useFollowUpStats } from "@/features/follow-ups/useFollowUps";
+import { useRecoveryStats } from "@/features/recovery/useRecovery";
 
 /**
  * Inicio (FASE 10) — pensado para que una corredora entienda el valor en 30s:
@@ -14,9 +15,11 @@ export default function DashboardHome() {
   const { data: statsData } = useLeadStats();
   const { data: leadsData } = useLeads({ unresponded: true });
   const { data: fuStatsData } = useFollowUpStats();
+  const { data: recoveryStatsData } = useRecoveryStats();
 
   const stats = statsData?.data;
   const fuStats = fuStatsData?.data;
+  const recoveryStats = recoveryStatsData?.data;
   const sinRespuesta = stats?.unresponded ?? 0;
   const ttfr = stats?.avgTtfrSeconds ?? null;
 
@@ -127,6 +130,36 @@ export default function DashboardHome() {
           <div className="text-sm text-zinc-400">% Cumplimiento</div>
           <div className="mt-1 text-3xl font-bold text-emerald-400">{fuStats?.compliancePct ?? 100}%</div>
           <div className="mt-2 text-xs text-zinc-500">{fuStats?.executed ?? 0} ejecutados</div>
+        </Link>
+      </div>
+
+      <h2 className="mt-8 mb-3 text-sm font-semibold text-zinc-400 uppercase tracking-wider">Recovery de leads fríos</h2>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Link
+          href="/recovery"
+          className="rounded-xl border border-amber-800/50 bg-zinc-900 p-5 hover:border-amber-600"
+        >
+          <div className="text-sm text-zinc-400">Candidatos de recovery</div>
+          <div className="mt-1 text-3xl font-bold text-amber-400">{recoveryStats?.candidates ?? 0}</div>
+          <div className="mt-2 text-xs text-zinc-500">Inactivos 30+ días</div>
+        </Link>
+
+        <Link
+          href="/recovery"
+          className="rounded-xl border border-emerald-800/50 bg-zinc-900 p-5 hover:border-emerald-600"
+        >
+          <div className="text-sm text-zinc-400">Reactivados</div>
+          <div className="mt-1 text-3xl font-bold text-emerald-400">{recoveryStats?.reactivated ?? 0}</div>
+          <div className="mt-2 text-xs text-zinc-500">Recuperados históricamente</div>
+        </Link>
+
+        <Link
+          href="/recovery"
+          className="rounded-xl border border-zinc-700 bg-zinc-900 p-5 hover:border-zinc-500"
+        >
+          <div className="text-sm text-zinc-400">Archivados</div>
+          <div className="mt-1 text-3xl font-bold text-zinc-400">{recoveryStats?.lost ?? 0}</div>
+          <div className="mt-2 text-xs text-zinc-500">Marcados como perdidos</div>
         </Link>
       </div>
 

@@ -14,6 +14,7 @@ import { LeadRouterModule } from "./modules/lead-router/lead-router.module";
 import { MessagingModule } from "./modules/messaging/messaging.module";
 import { LeadScoringModule } from "./modules/lead-scoring/lead-scoring.module";
 import { FollowUpModule } from "./modules/follow-up/follow-up.module";
+import { LeadRecoveryModule } from "./modules/lead-recovery/lead-recovery.module";
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { FollowUpModule } from "./modules/follow-up/follow-up.module";
     MessagingModule,
     LeadScoringModule,
     FollowUpModule,
+    LeadRecoveryModule,
   ],
 })
 export class AppModule {}

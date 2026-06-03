@@ -56,3 +56,12 @@ export class InboundMessageReceivedEvent implements DomainEvent {
     readonly leadId: string,
   ) {}
 }
+
+export class LeadRecoveredEvent implements DomainEvent {
+  readonly name = "lead.recovered";
+  readonly occurredAt = new Date();
+  constructor(
+    readonly tenantId: string,
+    readonly leadId: string,
+  ) {}
+}
