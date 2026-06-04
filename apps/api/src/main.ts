@@ -19,9 +19,9 @@ async function bootstrap() {
   // CORS para el frontend
   app.enableCors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:3000", credentials: true });
 
-  const port = Number(process.env.API_PORT ?? 4000);
-  await app.listen(port);
-  Logger.log(`CLIENTRA API escuchando en http://localhost:${port}/api/v1`, "Bootstrap");
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
+  await app.listen(port, "0.0.0.0");
+  Logger.log(`CLIENTRA API escuchando en http://0.0.0.0:${port}/api/v1`, "Bootstrap");
 }
 
 void bootstrap();
