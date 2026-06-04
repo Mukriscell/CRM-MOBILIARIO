@@ -16,8 +16,8 @@ async function bootstrap() {
   // Manejo de errores global (mapea excepciones de dominio → HTTP)
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  // CORS para el frontend
-  app.enableCors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:3000", credentials: true });
+  // CORS: acepta cualquier origen (reflejado) para compatibilidad con Railway y dev local
+  app.enableCors({ origin: true, credentials: true });
 
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
   await app.listen(port, "0.0.0.0");
