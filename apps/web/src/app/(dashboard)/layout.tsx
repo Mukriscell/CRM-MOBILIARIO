@@ -10,7 +10,7 @@ const NAV = [
   { href: "/leads", label: "📥 Bandeja de Leads" },
   { href: "/whatsapp", label: "💬 Inbox WhatsApp" },
   { href: "/pipeline", label: "🪜 Pipeline" },
-  { href: "/follow-ups", label: "✅ Seguimientos" },
+  { href: "/seguimientos", label: "✅ Seguimientos" },
   { href: "/recovery", label: "♻️ Recovery" },
   { href: "/visits", label: "📅 Visitas" },
   { href: "/properties", label: "🏠 Propiedades" },

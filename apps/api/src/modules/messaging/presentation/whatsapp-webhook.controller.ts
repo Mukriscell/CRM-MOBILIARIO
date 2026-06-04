@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   Inject,
@@ -85,6 +86,9 @@ export class SimulateInboundController {
   @Post("inbound")
   @HttpCode(202)
   async simulate(@Body() body: { fromPhone?: string; body?: string }): Promise<{ ok: boolean }> {
+    if (process.env.NODE_ENV === "production") {
+      throw new ForbiddenException("Endpoint de simulación no disponible en producción");
+    }
     const tenantId = this.tenantContext.requireTenantId();
     if (!body.fromPhone || !body.body) {
       throw new ValidationError("fromPhone y body son requeridos");

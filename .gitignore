@@ -12,7 +12,9 @@ out/
 .env
 .env.local
 .env.*.local
+.env.pilot
 !.env.example
+!.env.pilot.example
 
 # prisma
 **/migrations/dev.db*
