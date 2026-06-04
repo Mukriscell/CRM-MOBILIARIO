@@ -19,4 +19,4 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app /app
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@clientra/web", "start"]
+CMD ["sh", "-c", "pnpm --filter @clientra/web start"]
