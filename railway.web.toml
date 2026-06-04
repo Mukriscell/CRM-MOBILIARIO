@@ -1,6 +1,7 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "infrastructure/docker/web/Dockerfile"
+watchPatterns = ["apps/web/**", "infrastructure/docker/web/**", "packages/**", "pnpm-lock.yaml"]
 
 [deploy]
 healthcheckPath = "/"
