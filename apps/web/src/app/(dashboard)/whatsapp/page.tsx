@@ -18,7 +18,8 @@ export default function InboxPage() {
       <p className="mb-4 text-sm text-zinc-400">Conversaciones centralizadas y vinculadas a cada lead.</p>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[320px_1fr]">
-        <aside className="rounded-xl border border-zinc-800 bg-zinc-900">
+        {/* Lista: en móvil se oculta cuando hay una conversación abierta (maestro-detalle) */}
+        <aside className={`rounded-xl border border-zinc-800 bg-zinc-900 ${activeId ? "hidden md:block" : ""}`}>
           {isLoading && <div className="p-4 text-sm text-zinc-500">Cargando…</div>}
           {!isLoading && conversations.length === 0 && (
             <div className="p-6 text-center text-sm text-zinc-500">
@@ -38,9 +39,10 @@ export default function InboxPage() {
           </ul>
         </aside>
 
-        <section className="min-h-[60vh] rounded-xl border border-zinc-800 bg-zinc-900">
+        {/* Chat: en móvil solo se muestra cuando hay una conversación seleccionada */}
+        <section className={`min-h-[60vh] rounded-xl border border-zinc-800 bg-zinc-900 ${activeId ? "" : "hidden md:block"}`}>
           {activeId ? (
-            <Thread conversationId={activeId} />
+            <Thread conversationId={activeId} onBack={() => setActiveId(null)} />
           ) : (
             <div className="flex h-full min-h-[60vh] items-center justify-center text-sm text-zinc-500">
               Selecciona una conversación para ver el historial y responder.
@@ -85,7 +87,7 @@ function ConversationItem({
   );
 }
 
-function Thread({ conversationId }: { conversationId: string }) {
+function Thread({ conversationId, onBack }: { conversationId: string; onBack: () => void }) {
   const { data } = useThread(conversationId);
   const send = useSendMessage(conversationId);
   const [text, setText] = useState("");
@@ -106,9 +108,18 @@ function Thread({ conversationId }: { conversationId: string }) {
 
   return (
     <div className="flex h-full min-h-[60vh] flex-col">
-      <header className="border-b border-zinc-800 px-4 py-3">
-        <div className="font-medium text-white">{conv?.leadName ?? conv?.waContactPhone}</div>
-        <div className="text-xs text-zinc-500">{conv?.waContactPhone}</div>
+      <header className="flex items-center gap-2 border-b border-zinc-800 px-4 py-3">
+        <button
+          onClick={onBack}
+          aria-label="Volver a la lista"
+          className="-ml-1 rounded p-1.5 text-xl leading-none text-zinc-400 hover:bg-zinc-800 hover:text-white md:hidden"
+        >
+          ←
+        </button>
+        <div>
+          <div className="font-medium text-white">{conv?.leadName ?? conv?.waContactPhone}</div>
+          <div className="text-xs text-zinc-500">{conv?.waContactPhone}</div>
+        </div>
       </header>
 
       <div className="flex-1 space-y-2 overflow-y-auto p-4">

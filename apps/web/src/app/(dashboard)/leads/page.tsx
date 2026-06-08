@@ -91,7 +91,7 @@ function NuevoLeadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-6">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-6">
         <h2 className="mb-4 text-lg font-bold">Nuevo Lead</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -286,20 +286,20 @@ export default function LeadsPage() {
                   <td className="px-3 py-2 text-zinc-400">{lead.source}</td>
                   <td className="px-3 py-2">{lead.status}</td>
                   <td className="px-3 py-2">{waitingBadge(lead.minutesWaiting)}</td>
-                  <td className="px-3 py-2 flex gap-2">
+                  <td className="flex gap-2 whitespace-nowrap px-3 py-2">
                     {lead.phone && (
                       <a
                         href={`https://wa.me/${lead.phone.replace(/\D/g, "")}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded bg-emerald-600 px-2 py-1 text-xs hover:bg-emerald-500"
+                        className="rounded bg-emerald-600 px-2.5 py-1.5 text-xs hover:bg-emerald-500"
                       >
                         WhatsApp
                       </a>
                     )}
                     <Link
                       href={`/leads/${lead.id}`}
-                      className="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600"
+                      className="rounded bg-zinc-700 px-2.5 py-1.5 text-xs hover:bg-zinc-600"
                     >
                       Ver score
                     </Link>
@@ -312,7 +312,7 @@ export default function LeadsPage() {
                           }
                         }}
                         disabled={deleteLead.isPending}
-                        className="rounded bg-red-900/60 px-2 py-1 text-xs text-red-300 hover:bg-red-800 disabled:opacity-50"
+                        className="rounded bg-red-900/60 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-800 disabled:opacity-50"
                       >
                         Eliminar
                       </button>
