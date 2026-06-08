@@ -15,6 +15,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcrypt";
+import { randomBytes } from "crypto";
 import { readFileSync } from "fs";
 
 const prisma = new PrismaClient();
@@ -214,6 +215,14 @@ async function main() {
       // eslint-disable-next-line no-console
       console.log(`Datos de demo creados: ${demo.length} leads con conversaciones.`);
     }
+  }
+
+  // SEC-06: generar API key del webhook si el tenant no tiene una
+  if (!tenant.webhookApiKey) {
+    const apiKey = "clientra_wh_" + randomBytes(20).toString("hex");
+    await prisma.tenant.update({ where: { id: tenant.id }, data: { webhookApiKey: apiKey } });
+    // eslint-disable-next-line no-console
+    console.log(`Webhook API key generada para '${config.slug}': ${apiKey}`);
   }
 
   // eslint-disable-next-line no-console

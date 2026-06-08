@@ -314,10 +314,11 @@ model Tenant {
   slug      String       @unique
   rut       String?
   status    TenantStatus @default(TRIAL)
-  timezone  String       @default("America/Santiago")
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
-  deletedAt DateTime?    @map("deleted_at")
+  timezone      String       @default("America/Santiago")
+  webhookApiKey String?      @unique @map("webhook_api_key")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
 
   // Relations (tenant es la raíz de aislamiento)
   users           User[]
