@@ -1,5 +1,5 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/shared/lib/api-client";
 
 export interface LeadRow {
@@ -18,6 +18,17 @@ export interface LeadRow {
 interface LeadsResponse {
   data: LeadRow[];
   pagination: { nextCursor: string | null; hasMore: boolean; limit: number };
+}
+
+export function useDeleteLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch(`/leads/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["leads"] });
+      void qc.invalidateQueries({ queryKey: ["lead-stats"] });
+    },
+  });
 }
 
 export function useLeads(filters: { status?: string; unresponded?: boolean } = {}) {

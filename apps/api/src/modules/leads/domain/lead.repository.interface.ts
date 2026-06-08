@@ -51,4 +51,5 @@ export interface ILeadRepository {
   /** Métricas de conversión del tenant (totales + TTFR medio). */
   stats(tenantId: string): Promise<LeadStats>;
   assign(tenantId: string, leadId: string, userId: string, by: "SYSTEM" | "MANUAL", reason?: unknown): Promise<Lead>;
+  softDelete(tenantId: string, id: string): Promise<void>;
 }

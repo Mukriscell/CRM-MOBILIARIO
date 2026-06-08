@@ -135,6 +135,14 @@ export class PrismaLeadRepository implements ILeadRepository {
     return this.prisma.lead.findFirst({ where: { id: leadId, tenantId } });
   }
 
+  async softDelete(tenantId: string, id: string): Promise<void> {
+    const result = await this.prisma.lead.updateMany({
+      where: { id, tenantId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    if (result.count === 0) throw new Error("Lead no encontrado");
+  }
+
   async assign(
     tenantId: string,
     leadId: string,

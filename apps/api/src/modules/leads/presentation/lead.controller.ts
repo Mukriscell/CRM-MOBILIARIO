@@ -1,10 +1,13 @@
-import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
-import { Paginated } from "@clientra/shared-types";
+import { Controller, Delete, Get, HttpCode, Param, Query, UseGuards } from "@nestjs/common";
+import { Paginated, UserRole } from "@clientra/shared-types";
 import { JwtAuthGuard } from "../../auth/infrastructure/jwt-auth.guard";
+import { RolesGuard } from "../../auth/infrastructure/roles.guard";
+import { Roles } from "../../../shared/decorators/roles.decorator";
 import { TenantContextService } from "../../../shared/context/tenant-context.service";
 import { ListLeadsUseCase } from "../application/list-leads.use-case";
 import { GetLeadUseCase } from "../application/get-lead.use-case";
 import { GetLeadStatsUseCase } from "../application/get-lead-stats.use-case";
+import { DeleteLeadUseCase } from "../application/delete-lead.use-case";
 import { LeadResponse } from "../application/lead-response.dto";
 
 /**
@@ -18,6 +21,7 @@ export class LeadController {
     private readonly listLeads: ListLeadsUseCase,
     private readonly getLead: GetLeadUseCase,
     private readonly getStats: GetLeadStatsUseCase,
+    private readonly deleteLead: DeleteLeadUseCase,
     private readonly tenantContext: TenantContextService,
   ) {}
 
@@ -49,5 +53,16 @@ export class LeadController {
   async detail(@Param("id") id: string): Promise<{ data: LeadResponse }> {
     const tenantId = this.tenantContext.requireTenantId();
     return { data: await this.getLead.execute(tenantId, id) };
+  }
+
+  /** DELETE /api/v1/leads/:id — soft delete. Solo ADMIN. */
+  @Delete(":id")
+  @HttpCode(200)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async remove(@Param("id") id: string): Promise<{ ok: boolean }> {
+    const tenantId = this.tenantContext.requireTenantId();
+    await this.deleteLead.execute(tenantId, id);
+    return { ok: true };
   }
 }

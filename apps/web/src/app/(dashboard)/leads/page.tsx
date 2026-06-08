@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useLeads, LeadRow } from "@/features/leads/useLeads";
+import { useLeads, useDeleteLead, LeadRow } from "@/features/leads/useLeads";
+import { useAuth } from "@/features/auth/auth.store";
 import { apiFetch } from "@/shared/lib/api-client";
 
 const SCORE_STYLE: Record<string, string> = {
@@ -210,6 +211,9 @@ export default function LeadsPage() {
   const [unresponded, setUnresponded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const { data, isLoading, error, refetch } = useLeads({ unresponded });
+  const deleteLead = useDeleteLead();
+  const user = useAuth((s) => s.user);
+  const isAdmin = user?.role === "ADMIN";
 
   return (
     <div>
@@ -299,6 +303,20 @@ export default function LeadsPage() {
                     >
                       Ver score
                     </Link>
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          const nombre = [lead.firstName, lead.lastName].filter(Boolean).join(" ") || lead.phone || lead.id.slice(0, 8);
+                          if (confirm(`¿Eliminar a ${nombre}? Esta acción no se puede deshacer.`)) {
+                            deleteLead.mutate(lead.id);
+                          }
+                        }}
+                        disabled={deleteLead.isPending}
+                        className="rounded bg-red-900/60 px-2 py-1 text-xs text-red-300 hover:bg-red-800 disabled:opacity-50"
+                      >
+                        Eliminar
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
