@@ -34,15 +34,28 @@ export class PrismaConversationRepository implements IConversationRepository {
       }
       return existing;
     }
-    return this.prisma.conversation.create({
-      data: {
-        tenantId,
-        waContactPhone: phone,
-        leadId: leadId ?? null,
-        assignedUserId: assignedUserId ?? null,
-        status: "OPEN",
-      },
-    });
+
+    try {
+      return await this.prisma.conversation.create({
+        data: {
+          tenantId,
+          waContactPhone: phone,
+          leadId: leadId ?? null,
+          assignedUserId: assignedUserId ?? null,
+          status: "OPEN",
+        },
+      });
+    } catch (e: any) {
+      // P2002: otra request creó la conversación en la race condition window.
+      if (e?.code === "P2002") {
+        const race = await this.prisma.conversation.findFirst({
+          where: { tenantId, waContactPhone: phone, status: { not: "CLOSED" } },
+          orderBy: { createdAt: "desc" },
+        });
+        if (race) return race;
+      }
+      throw e;
+    }
   }
 
   findById(tenantId: string, id: string): Promise<Conversation | null> {

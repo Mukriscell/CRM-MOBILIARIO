@@ -14,22 +14,32 @@ import { decodeCursor, encodeCursor } from "./cursor";
 export class PrismaLeadRepository implements ILeadRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: CreateLeadData): Promise<Lead> {
-    return this.prisma.lead.create({
-      data: {
-        tenantId: data.tenantId,
-        firstName: data.firstName ?? null,
-        lastName: data.lastName ?? null,
-        email: data.email ?? null,
-        phone: data.phone ?? null,
-        source: data.source,
-        budgetAmount: data.budgetAmount ?? null,
-        budgetCurrency: data.budgetCurrency ?? "CLP",
-        interestedPropertyId: data.interestedPropertyId ?? null,
-        rawPayload: (data.rawPayload as Prisma.InputJsonValue) ?? undefined,
-        lastActivityAt: new Date(),
-      },
-    });
+  async create(data: CreateLeadData): Promise<Lead> {
+    try {
+      return await this.prisma.lead.create({
+        data: {
+          tenantId: data.tenantId,
+          firstName: data.firstName ?? null,
+          lastName: data.lastName ?? null,
+          email: data.email ?? null,
+          phone: data.phone ?? null,
+          source: data.source,
+          budgetAmount: data.budgetAmount ?? null,
+          budgetCurrency: data.budgetCurrency ?? "CLP",
+          interestedPropertyId: data.interestedPropertyId ?? null,
+          rawPayload: (data.rawPayload as Prisma.InputJsonValue) ?? undefined,
+          lastActivityAt: new Date(),
+        },
+      });
+    } catch (e: any) {
+      // P2002: unique constraint violation — otra request ganó la race condition.
+      // Devolvemos el lead existente en vez de fallar con un 500.
+      if (e?.code === "P2002") {
+        const existing = await this.findActiveByContact(data.tenantId, data.phone ?? null, data.email ?? null);
+        if (existing) return existing;
+      }
+      throw e;
+    }
   }
 
   findActiveByContact(tenantId: string, phone?: string | null, email?: string | null): Promise<Lead | null> {
