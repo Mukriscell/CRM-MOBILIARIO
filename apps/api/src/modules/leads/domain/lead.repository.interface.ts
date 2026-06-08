@@ -1,4 +1,4 @@
-import { Lead, LeadSource } from "@prisma/client";
+import { Lead, LeadSource, LeadStatus } from "@prisma/client";
 
 export const LEAD_REPOSITORY = Symbol("LEAD_REPOSITORY");
 
@@ -51,5 +51,7 @@ export interface ILeadRepository {
   /** Métricas de conversión del tenant (totales + TTFR medio). */
   stats(tenantId: string): Promise<LeadStats>;
   assign(tenantId: string, leadId: string, userId: string, by: "SYSTEM" | "MANUAL", reason?: unknown): Promise<Lead>;
+  /** Mueve el lead a otra etapa del pipeline (FASE Kanban). Aísla por tenant. */
+  updateStatus(tenantId: string, id: string, status: LeadStatus): Promise<void>;
   softDelete(tenantId: string, id: string): Promise<void>;
 }
