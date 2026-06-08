@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, Inject, Post, UseGuards, UsePipes } from "@nestjs/common";
+import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { LeadIntakeSchema, LeadIntakeInput } from "@clientra/shared-types";
 import { IngestLeadUseCase } from "../application/ingest-lead.use-case";
 import { JwtAuthGuard } from "../../auth/infrastructure/jwt-auth.guard";
@@ -33,9 +34,12 @@ export class IntakeController {
   /**
    * Webhook genérico de formularios/landing. El tenant se resuelve por slug
    * (header X-Tenant-Slug). La verificación de firma HMAC se añade en H2.
+   * Rate limit: 30 leads/min por IP para evitar flood (LLM04/SEC-06).
    */
   @Post("webhook/forms")
   @HttpCode(202)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @UsePipes(new ZodValidationPipe(LeadIntakeSchema))
   async ingestFormsWebhook(@Body() body: LeadIntakeInput) {
     const slug = (body.raw?.["tenantSlug"] as string) ?? null;

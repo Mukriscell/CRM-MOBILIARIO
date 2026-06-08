@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { Logger } from "@nestjs/common";
+import { json, urlencoded } from "express";
 import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./shared/filters/global-exception.filter";
 
@@ -11,6 +12,10 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
+
+  // Límite de tamaño de payload: evita DoS/flood al modelo (LLM04)
+  app.use(json({ limit: "100kb" }));
+  app.use(urlencoded({ extended: true, limit: "100kb" }));
 
   // Prefijo y versionado de la API (FASE 9: /api/v1)
   app.setGlobalPrefix("api/v1");

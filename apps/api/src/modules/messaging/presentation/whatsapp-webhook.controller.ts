@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
+import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { ReceiveInboundMessageUseCase } from "../application/receive-inbound-message.use-case";
 import { ITenantRepository, TENANT_REPOSITORY } from "../../tenant/domain/tenant.repository.interface";
 import { JwtAuthGuard } from "../../auth/infrastructure/jwt-auth.guard";
@@ -30,8 +31,10 @@ export class WhatsAppWebhookController {
     @Inject(TENANT_REPOSITORY) private readonly tenants: ITenantRepository,
   ) {}
 
-  /** Verificación del webhook (Meta envía hub.* en el alta). */
+  /** Verificación del webhook (Meta envía hub.* en el alta). 10/min máximo. */
   @Get()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   verify(
     @Query("hub.mode") mode?: string,
     @Query("hub.verify_token") token?: string,
@@ -45,9 +48,11 @@ export class WhatsAppWebhookController {
     throw new ValidationError("Verificación de webhook fallida");
   }
 
-  /** Recepción de mensajes entrantes (payload de WhatsApp Cloud API). */
+  /** Recepción de mensajes entrantes (payload de WhatsApp Cloud API). 200/min — Meta puede enviar ráfagas. */
   @Post()
   @HttpCode(200)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 200, ttl: 60_000 } })
   async inbound(@Body() payload: any): Promise<{ received: boolean }> {
     const slug = process.env.WHATSAPP_DEFAULT_TENANT_SLUG ?? "demo";
     const tenant = await this.tenants.findBySlug(slug);
@@ -87,8 +92,9 @@ export class SimulateInboundController {
   @Post("inbound")
   @HttpCode(202)
   async simulate(@Body() body: { fromPhone?: string; body?: string }): Promise<{ ok: boolean }> {
-    if (process.env.NODE_ENV === "production") {
-      throw new ForbiddenException("Endpoint de simulación no disponible en producción");
+    // SEC-08: opt-in explícito requerido; NODE_ENV no es suficiente porque puede no setearse en Railway
+    if (process.env.ENABLE_SIMULATE_ENDPOINT !== "true") {
+      throw new ForbiddenException("Endpoint de simulación deshabilitado");
     }
     const tenantId = this.tenantContext.requireTenantId();
     if (!body.fromPhone || !body.body) {

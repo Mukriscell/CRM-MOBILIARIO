@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ClsModule } from "nestjs-cls";
 import { BullModule } from "@nestjs/bullmq";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { DatabaseModule } from "./infrastructure/database/database.module";
 import { HealthModule } from "./infrastructure/health/health.module";
 import { ContextModule } from "./shared/context/context.module";
@@ -20,6 +21,8 @@ import { LeadRecoveryModule } from "./modules/lead-recovery/lead-recovery.module
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Rate limiting global: límites base que los endpoints sobreescriben con @Throttle
+    ThrottlerModule.forRoot([{ name: "default", ttl: 60_000, limit: 120 }]),
     // Contexto por request (tenant + user) vía AsyncLocalStorage
     ClsModule.forRoot({ global: true, middleware: { mount: true } }),
     // Cola BullMQ global — conexión Redis compartida
