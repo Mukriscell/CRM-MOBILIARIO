@@ -11,14 +11,14 @@ export class ExecuteFollowUpUseCase {
   ) {}
 
   async execute(tenantId: string, id: string): Promise<LeadFollowUp> {
-    const fu = await this.repo.findById(id);
-    if (!fu || fu.tenantId !== tenantId) throw new NotFoundException("Follow-up no encontrado");
+    const fu = await this.repo.findById(tenantId, id);
+    if (!fu) throw new NotFoundException("Follow-up no encontrado");
     if (fu.status !== "PENDING") {
       this.logger.warn(`Follow-up ${id} ya está en estado ${fu.status}, saltando`);
       return fu;
     }
 
-    const executed = await this.repo.markExecuted(id);
+    const executed = await this.repo.markExecuted(tenantId, id);
     this.logger.log(`Follow-up ${id} ejecutado (lead ${fu.leadId}, paso día ${fu.sequenceStep})`);
     return executed;
   }

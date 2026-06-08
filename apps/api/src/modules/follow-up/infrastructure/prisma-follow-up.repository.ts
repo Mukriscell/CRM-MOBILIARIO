@@ -19,8 +19,8 @@ export class PrismaFollowUpRepository implements IFollowUpRepository {
     });
   }
 
-  findById(id: string): Promise<LeadFollowUp | null> {
-    return this.prisma.leadFollowUp.findUnique({ where: { id } });
+  findById(tenantId: string, id: string): Promise<LeadFollowUp | null> {
+    return this.prisma.leadFollowUp.findFirst({ where: { id, tenantId } });
   }
 
   findByLead(tenantId: string, leadId: string): Promise<LeadFollowUp[]> {
@@ -52,17 +52,26 @@ export class PrismaFollowUpRepository implements IFollowUpRepository {
     return result.count;
   }
 
-  markExecuted(id: string): Promise<LeadFollowUp> {
-    return this.prisma.leadFollowUp.update({
-      where: { id },
+  async markExecuted(tenantId: string, id: string): Promise<LeadFollowUp> {
+    await this.prisma.leadFollowUp.updateMany({
+      where: { id, tenantId },
       data: { status: "SENT", executedAt: new Date() },
     });
+    return this.prisma.leadFollowUp.findFirst({ where: { id, tenantId } }) as Promise<LeadFollowUp>;
   }
 
-  markFailed(id: string, reason: string): Promise<LeadFollowUp> {
-    return this.prisma.leadFollowUp.update({
-      where: { id },
+  async markFailed(tenantId: string, id: string, reason: string): Promise<LeadFollowUp> {
+    await this.prisma.leadFollowUp.updateMany({
+      where: { id, tenantId },
       data: { status: "FAILED", cancelReason: reason },
+    });
+    return this.prisma.leadFollowUp.findFirst({ where: { id, tenantId } }) as Promise<LeadFollowUp>;
+  }
+
+  async markCancelled(tenantId: string, id: string, reason: string): Promise<void> {
+    await this.prisma.leadFollowUp.updateMany({
+      where: { id, tenantId },
+      data: { status: "CANCELLED", cancelReason: reason },
     });
   }
 

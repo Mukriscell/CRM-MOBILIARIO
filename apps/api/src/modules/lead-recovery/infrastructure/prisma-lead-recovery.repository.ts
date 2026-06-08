@@ -59,7 +59,7 @@ export class PrismaLeadRecoveryRepository implements ILeadRecoveryRepository {
       this.prisma.lead.findMany({
         where: {
           tenantId,
-          status: { notIn: ["PERDIDO"] },
+          status: { notIn: ["PERDIDO", "VENTA_CERRADA", "RESERVA"] },
           lastActivityAt: { lt: cutoff },
           deletedAt: null,
         },
@@ -129,8 +129,8 @@ export class PrismaLeadRecoveryRepository implements ILeadRecoveryRepository {
     });
   }
 
-  findById(id: string): Promise<LeadRecovery | null> {
-    return this.prisma.leadRecovery.findUnique({ where: { id } });
+  findById(tenantId: string, id: string): Promise<LeadRecovery | null> {
+    return this.prisma.leadRecovery.findFirst({ where: { id, tenantId } });
   }
 
   findByLead(tenantId: string, leadId: string): Promise<LeadRecovery[]> {

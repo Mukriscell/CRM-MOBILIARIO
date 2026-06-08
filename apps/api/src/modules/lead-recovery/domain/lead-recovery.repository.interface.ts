@@ -17,7 +17,7 @@ export interface ILeadRecoveryRepository {
   /** Un lead específico como candidato (null si no cumple criterios). */
   findCandidateById(tenantId: string, leadId: string): Promise<RecoveryCandidate | null>;
   create(input: CreateRecoveryInput): Promise<LeadRecovery>;
-  findById(id: string): Promise<LeadRecovery | null>;
+  findById(tenantId: string, id: string): Promise<LeadRecovery | null>;
   findByLead(tenantId: string, leadId: string): Promise<LeadRecovery[]>;
   /** Actualiza el status del lead (para archivar/reactivar). */
   updateLeadStatus(tenantId: string, leadId: string, status: "PERDIDO" | "CONTACTADO"): Promise<void>;

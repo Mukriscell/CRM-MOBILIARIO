@@ -37,7 +37,8 @@ export class WhatsAppWebhookController {
     @Query("hub.verify_token") token?: string,
     @Query("hub.challenge") challenge?: string,
   ): string {
-    const expected = process.env.WHATSAPP_VERIFY_TOKEN ?? "clientra-verify";
+    const expected = process.env.WHATSAPP_VERIFY_TOKEN;
+    if (!expected) throw new ValidationError("WHATSAPP_VERIFY_TOKEN no configurado");
     if (mode === "subscribe" && token === expected) {
       return challenge ?? "";
     }

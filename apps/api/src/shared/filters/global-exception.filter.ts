@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from "@nestjs/common";
 import { Response } from "express";
 import { randomUUID } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { DomainError } from "../errors/domain-error";
 
 /** Mapea excepciones (dominio + HTTP + desconocidas) al envelope de error de la API (FASE 9). */
@@ -16,6 +17,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       res.status(exception.httpStatus).json({
         error: { code: exception.code, message: exception.message, traceId },
       });
+      return;
+    }
+
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      const map: Record<string, [number, string]> = {
+        P2002: [409, "Recurso duplicado"],
+        P2025: [404, "Recurso no encontrado"],
+        P2003: [409, "Operación bloqueada por referencia existente"],
+      };
+      const [status, message] = map[exception.code] ?? [500, "Error de base de datos"];
+      if (status === 500) this.logger.error(`Prisma error ${exception.code} [${traceId}]`, exception.message);
+      res.status(status).json({ error: { code: `DB_${exception.code}`, message, traceId } });
       return;
     }
 

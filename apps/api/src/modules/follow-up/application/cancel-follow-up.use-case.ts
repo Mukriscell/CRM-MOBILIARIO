@@ -15,11 +15,11 @@ export class CancelFollowUpUseCase {
 
   /** Cancela un follow-up específico por ID. */
   async executeOne(tenantId: string, id: string, reason = "cancelado manualmente"): Promise<void> {
-    const fu = await this.repo.findById(id);
-    if (!fu || fu.tenantId !== tenantId) throw new NotFoundException("Follow-up no encontrado");
+    const fu = await this.repo.findById(tenantId, id);
+    if (!fu) throw new NotFoundException("Follow-up no encontrado");
     if (fu.status !== "PENDING") return;
 
-    await this.repo.markFailed(id, reason);
+    await this.repo.markCancelled(tenantId, id, reason);
     const job = await this.queue.getJob(id);
     if (job) await job.remove();
   }

@@ -5,6 +5,11 @@ import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./shared/filters/global-exception.filter";
 
 async function bootstrap() {
+  if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
+    Logger.error("JWT_ACCESS_SECRET y JWT_REFRESH_SECRET son requeridos", "Bootstrap");
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
 
   // Prefijo y versionado de la API (FASE 9: /api/v1)

@@ -12,12 +12,13 @@ export interface CreateFollowUpInput {
 
 export interface IFollowUpRepository {
   createMany(inputs: CreateFollowUpInput[]): Promise<LeadFollowUp[]>;
-  findById(id: string): Promise<LeadFollowUp | null>;
+  findById(tenantId: string, id: string): Promise<LeadFollowUp | null>;
   findByLead(tenantId: string, leadId: string): Promise<LeadFollowUp[]>;
   findPendingForTenant(tenantId: string): Promise<LeadFollowUp[]>;
   findAllForTenant(tenantId: string, status?: string): Promise<LeadFollowUp[]>;
   cancelAllPendingForLead(tenantId: string, leadId: string, reason: string): Promise<number>;
-  markExecuted(id: string): Promise<LeadFollowUp>;
-  markFailed(id: string, reason: string): Promise<LeadFollowUp>;
+  markExecuted(tenantId: string, id: string): Promise<LeadFollowUp>;
+  markFailed(tenantId: string, id: string, reason: string): Promise<LeadFollowUp>;
+  markCancelled(tenantId: string, id: string, reason: string): Promise<void>;
   stats(tenantId: string): Promise<FollowUpStats>;
 }

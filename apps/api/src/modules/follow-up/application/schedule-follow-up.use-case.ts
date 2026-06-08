@@ -14,6 +14,12 @@ export class ScheduleFollowUpUseCase {
   ) {}
 
   async execute(tenantId: string, leadId: string): Promise<void> {
+    const existing = await this.repo.findByLead(tenantId, leadId);
+    if (existing.some((f) => f.status === "PENDING")) {
+      this.logger.warn(`Lead ${leadId} ya tiene follow-ups PENDING — ignorando doble schedule`);
+      return;
+    }
+
     const now = Date.now();
     const inputs = CADENCE_DAYS.map((days) => ({
       tenantId,
