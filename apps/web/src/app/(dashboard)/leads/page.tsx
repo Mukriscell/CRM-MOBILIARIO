@@ -213,7 +213,7 @@ export default function LeadsPage() {
   const { data, isLoading, error, refetch } = useLeads({ unresponded });
   const deleteLead = useDeleteLead();
   const user = useAuth((s) => s.user);
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
   return (
     <div>
