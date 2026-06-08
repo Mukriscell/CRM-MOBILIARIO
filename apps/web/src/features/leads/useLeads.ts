@@ -28,6 +28,9 @@ export function useDeleteLead() {
       void qc.invalidateQueries({ queryKey: ["leads"] });
       void qc.invalidateQueries({ queryKey: ["lead-stats"] });
     },
+    onError: (err: Error) => {
+      alert(`No se pudo eliminar el lead: ${err.message}`);
+    },
   });
 }
 
