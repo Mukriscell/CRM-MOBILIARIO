@@ -30,10 +30,16 @@ import { LeadRecoveryModule } from "./modules/lead-recovery/lead-recovery.module
       useFactory: () => {
         const url = process.env.REDIS_URL ?? "redis://localhost:6379";
         const parsed = new URL(url);
+        // Railway puede usar rediss:// (TLS) o redis:// con password en la URL
+        const isTls = url.startsWith("rediss://");
         return {
           connection: {
             host: parsed.hostname,
             port: parseInt(parsed.port || "6379"),
+            password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+            username: parsed.username ? decodeURIComponent(parsed.username) : undefined,
+            db: parsed.pathname && parsed.pathname !== "/" ? (parseInt(parsed.pathname.slice(1)) || 0) : 0,
+            tls: isTls ? { rejectUnauthorized: false } : undefined,
             maxRetriesPerRequest: null,
           },
         };
