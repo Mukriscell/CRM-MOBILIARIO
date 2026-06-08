@@ -36,7 +36,10 @@ import { LeadRecoveryModule } from "./modules/lead-recovery/lead-recovery.module
           connection: {
             host: parsed.hostname,
             port: parseInt(parsed.port || "6379"),
-            password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+            // Fallback: Railway a veces expone REDIS_PASSWORD por separado
+            password: parsed.password
+              ? decodeURIComponent(parsed.password)
+              : (process.env.REDIS_PASSWORD || undefined),
             username: parsed.username ? decodeURIComponent(parsed.username) : undefined,
             db: parsed.pathname && parsed.pathname !== "/" ? (parseInt(parsed.pathname.slice(1)) || 0) : 0,
             tls: isTls ? { rejectUnauthorized: false } : undefined,
