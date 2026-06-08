@@ -48,5 +48,6 @@ import {
     GetThreadUseCase,
     LeadCreatedAutoResponseListener,
   ],
+  exports: [MESSAGING_PROVIDER],
 })
 export class MessagingModule {}

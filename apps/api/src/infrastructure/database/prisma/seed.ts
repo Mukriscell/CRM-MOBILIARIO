@@ -217,6 +217,54 @@ async function main() {
     }
   }
 
+  // ─── Propiedades de demo (catálogo base para agendar visitas) ───────────────
+  if (config.seedDemoLeads) {
+    const existingProps = await prisma.property.count({ where: { tenantId: tenant.id } });
+    if (existingProps === 0) {
+      type DemoProperty = {
+        internalCode: string;
+        type: "DEPTO" | "CASA" | "OFICINA" | "TERRENO" | "LOCAL";
+        commune: string;
+        address: string;
+        priceAmount: number;
+        priceCurrency: "UF" | "CLP";
+        bedrooms: number | null;
+        bathrooms: number | null;
+        areaBuiltM2: number | null;
+      };
+
+      const demoProps: DemoProperty[] = [
+        { internalCode: "DEP-001", type: "DEPTO", commune: "Providencia", address: "Av. Pedro de Valdivia 1234, depto 802", priceAmount: 4200, priceCurrency: "UF", bedrooms: 2, bathrooms: 2, areaBuiltM2: 65 },
+        { internalCode: "CAS-002", type: "CASA",  commune: "La Reina",    address: "Los Cipreses 567",                  priceAmount: 9800, priceCurrency: "UF", bedrooms: 4, bathrooms: 3, areaBuiltM2: 180 },
+        { internalCode: "DEP-003", type: "DEPTO", commune: "Ñuñoa",       address: "Irarrázaval 4321, depto 305",        priceAmount: 3500, priceCurrency: "UF", bedrooms: 1, bathrooms: 1, areaBuiltM2: 45 },
+        { internalCode: "OFI-004", type: "OFICINA", commune: "Las Condes", address: "Apoquindo 5500, of. 1402",          priceAmount: 5200, priceCurrency: "UF", bedrooms: null, bathrooms: 2, areaBuiltM2: 90 },
+        { internalCode: "CAS-005", type: "CASA",  commune: "Peñalolén",   address: "Av. Las Parcelas 890",               priceAmount: 7400, priceCurrency: "UF", bedrooms: 3, bathrooms: 2, areaBuiltM2: 140 },
+      ];
+
+      for (const p of demoProps) {
+        await prisma.property.create({
+          data: {
+            tenantId: tenant.id,
+            internalCode: p.internalCode,
+            type: p.type,
+            status: "ACTIVA",
+            address: p.address,
+            region: "Metropolitana",
+            commune: p.commune,
+            priceAmount: p.priceAmount,
+            priceCurrency: p.priceCurrency,
+            bedrooms: p.bedrooms,
+            bathrooms: p.bathrooms,
+            areaBuiltM2: p.areaBuiltM2,
+            assignedUserId: brokerIds[0] ?? null,
+          },
+        });
+      }
+      // eslint-disable-next-line no-console
+      console.log(`Propiedades de demo creadas: ${demoProps.length}.`);
+    }
+  }
+
   // SEC-06: generar API key del webhook si el tenant no tiene una
   if (!tenant.webhookApiKey) {
     const apiKey = "clientra_wh_" + randomBytes(20).toString("hex");

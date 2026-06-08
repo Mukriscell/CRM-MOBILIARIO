@@ -65,3 +65,13 @@ export class LeadRecoveredEvent implements DomainEvent {
     readonly leadId: string,
   ) {}
 }
+
+export class VisitScheduledEvent implements DomainEvent {
+  readonly name = "visit.scheduled";
+  readonly occurredAt = new Date();
+  constructor(
+    readonly tenantId: string,
+    readonly visitId: string,
+    readonly leadId: string,
+  ) {}
+}
