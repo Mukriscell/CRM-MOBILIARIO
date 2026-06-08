@@ -31,6 +31,16 @@ export const useAuth = create<AuthState>((set) => ({
     set({ user: res.data.user });
   },
   logout: () => {
+    const refreshToken = typeof window !== "undefined"
+      ? window.localStorage.getItem("clientra_refresh_token")
+      : null;
+    // Revocar sesión en servidor (SEC-03). Fire-and-forget: no bloquea la UI.
+    if (refreshToken) {
+      apiFetch("/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refreshToken }),
+      }).catch(() => {});
+    }
     window.localStorage.removeItem("clientra_token");
     window.localStorage.removeItem("clientra_refresh_token");
     window.localStorage.removeItem("clientra_user");
