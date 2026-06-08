@@ -46,6 +46,9 @@ export function useExecuteFollowUp() {
       void qc.invalidateQueries({ queryKey: ["follow-ups"] });
       void qc.invalidateQueries({ queryKey: ["follow-up-stats"] });
     },
+    onError: (err: Error) => {
+      alert(`No se pudo ejecutar el seguimiento: ${err.message}`);
+    },
   });
 }
 
@@ -56,6 +59,9 @@ export function useCancelFollowUp() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["follow-ups"] });
       void qc.invalidateQueries({ queryKey: ["follow-up-stats"] });
+    },
+    onError: (err: Error) => {
+      alert(`No se pudo cancelar el seguimiento: ${err.message}`);
     },
   });
 }

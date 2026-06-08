@@ -132,6 +132,11 @@ function Thread({ conversationId }: { conversationId: string }) {
                   minute: "2-digit",
                 })}
               </div>
+              {m.direction === "OUTBOUND" && m.metadata?.deliveryStatus === "FAILED" && (
+                <div className="mt-1 text-[10px] font-semibold text-red-300">
+                  ⚠ No entregado por WhatsApp
+                </div>
+              )}
             </div>
           </div>
         ))}

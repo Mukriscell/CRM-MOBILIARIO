@@ -19,6 +19,7 @@ export interface MessageRow {
   body: string | null;
   sentByUserId: string | null;
   createdAt: string;
+  metadata: { deliveryStatus?: "SENT" | "FAILED"; error?: string | null } | null;
 }
 
 interface ConversationListResponse {
@@ -60,10 +61,13 @@ export function useSendMessage(conversationId: string | null) {
         body: JSON.stringify({ body }),
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["conversation", conversationId] });
-      qc.invalidateQueries({ queryKey: ["conversations"] });
-      qc.invalidateQueries({ queryKey: ["leads"] });
-      qc.invalidateQueries({ queryKey: ["lead-stats"] });
+      void qc.invalidateQueries({ queryKey: ["conversation", conversationId] });
+      void qc.invalidateQueries({ queryKey: ["conversations"] });
+      void qc.invalidateQueries({ queryKey: ["leads"] });
+      void qc.invalidateQueries({ queryKey: ["lead-stats"] });
+    },
+    onError: (err: Error) => {
+      alert(`No se pudo enviar el mensaje: ${err.message}`);
     },
   });
 }

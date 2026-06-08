@@ -53,8 +53,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const latest = score?.latest;
 
   async function handleRecalculate() {
-    await recalculate.mutateAsync(undefined);
-    void refetch();
+    try {
+      await recalculate.mutateAsync(undefined);
+      void refetch();
+    } catch (err) {
+      alert(`No se pudo recalcular el score: ${(err as Error).message}`);
+    }
   }
 
   return (
