@@ -258,8 +258,8 @@ export default function LeadsPage() {
       )}
 
       {data && data.data.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-zinc-800">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-zinc-800">
+          <table className="w-full min-w-[760px] text-sm">
             <thead className="bg-zinc-900 text-left text-zinc-400">
               <tr>
                 <th className="px-3 py-2">Score</th>
