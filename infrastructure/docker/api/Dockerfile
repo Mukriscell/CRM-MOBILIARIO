@@ -1,5 +1,9 @@
 # Multi-stage build de la API NestJS (monorepo pnpm)
 FROM node:22-alpine AS builder
+# Toolchain para compilar módulos nativos (bcrypt) si el binario pre-built de
+# GitHub no está disponible (p.ej. 504). Sin esto, node-gyp falla por falta de Python.
+# openssl: Prisma lo necesita para detectar la versión de libssl del engine.
+RUN apk add --no-cache python3 make g++ openssl
 RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
 WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
