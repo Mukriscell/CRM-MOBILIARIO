@@ -103,7 +103,7 @@ describe("CancelFollowUpUseCase", () => {
   function mockRepoForCancel(followUps: LeadFollowUp[] = []) {
     return {
       createMany: vi.fn(),
-      findById: vi.fn().mockImplementation((id: string) =>
+      findById: vi.fn().mockImplementation((_tenantId: string, id: string) =>
         Promise.resolve(followUps.find((f) => f.id === id) ?? null),
       ),
       findByLead: vi.fn().mockResolvedValue(followUps),
@@ -111,7 +111,8 @@ describe("CancelFollowUpUseCase", () => {
       findAllForTenant: vi.fn().mockResolvedValue([]),
       cancelAllPendingForLead: vi.fn().mockResolvedValue(followUps.filter((f) => f.status === "PENDING").length),
       markExecuted: vi.fn(),
-      markFailed: vi.fn().mockImplementation((id: string) =>
+      markCancelled: vi.fn().mockResolvedValue(undefined),
+      markFailed: vi.fn().mockImplementation((_tenantId: string, id: string) =>
         Promise.resolve(makeFollowUp({ id, status: "FAILED" })),
       ),
       stats: vi.fn(),
@@ -132,7 +133,7 @@ describe("CancelFollowUpUseCase", () => {
     useCase = new CancelFollowUpUseCase(repo as never, queue as never);
 
     await useCase.executeOne("tenant-1", "fu-1");
-    expect(repo.markFailed).toHaveBeenCalledWith("fu-1", expect.any(String));
+    expect(repo.markCancelled).toHaveBeenCalledWith("tenant-1", "fu-1", expect.any(String));
   });
 
   it("no hace nada si el follow-up ya está SENT", async () => {
@@ -142,7 +143,7 @@ describe("CancelFollowUpUseCase", () => {
     useCase = new CancelFollowUpUseCase(repo as never, queue as never);
 
     await useCase.executeOne("tenant-1", "fu-1");
-    expect(repo.markFailed).not.toHaveBeenCalled();
+    expect(repo.markCancelled).not.toHaveBeenCalled();
   });
 
   it("cancela todos los PENDING de un lead", async () => {
@@ -169,7 +170,7 @@ describe("ExecuteFollowUpUseCase", () => {
     const useCase = new ExecuteFollowUpUseCase(repo as never);
 
     const result = await useCase.execute("tenant-1", "fu-1");
-    expect(repo.markExecuted).toHaveBeenCalledWith("fu-1");
+    expect(repo.markExecuted).toHaveBeenCalledWith("tenant-1", "fu-1");
     expect(result.status).toBe("SENT");
   });
 
