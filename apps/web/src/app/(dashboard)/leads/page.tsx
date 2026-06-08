@@ -2,12 +2,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLeads, LeadRow } from "@/features/leads/useLeads";
+import { apiFetch } from "@/shared/lib/api-client";
 
 const SCORE_STYLE: Record<string, string> = {
   HOT: "bg-red-900/50 text-red-300 border border-red-700/50",
   WARM: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
   COLD: "bg-zinc-800 text-zinc-400 border border-zinc-700",
 };
+
+const LEAD_SOURCES = [
+  { value: "WHATSAPP", label: "WhatsApp" },
+  { value: "META_ADS", label: "Meta Ads" },
+  { value: "INSTAGRAM", label: "Instagram" },
+  { value: "LANDING", label: "Landing Page" },
+  { value: "WEB_FORM", label: "Formulario Web" },
+  { value: "PORTAL", label: "Portal Inmobiliario" },
+  { value: "REFERIDO", label: "Referido" },
+  { value: "OTRO", label: "Otro" },
+];
 
 function ScoreBadge({ tier }: { tier: string | null }) {
   if (!tier) return <span className="text-zinc-600 text-xs">—</span>;
@@ -24,21 +36,207 @@ function waitingBadge(minutes: number | null) {
   return <span className={color}>{minutes} min</span>;
 }
 
+const EMPTY_FORM = {
+  firstName: "",
+  lastName: "",
+  phone: "",
+  email: "",
+  source: "OTRO",
+  commune: "",
+  budget: "",
+  currency: "UF",
+};
+
+function NuevoLeadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const set = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.phone && !form.email) {
+      setError("Ingresa al menos un teléfono o email.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await apiFetch("/lead-intake", {
+        method: "POST",
+        body: JSON.stringify({
+          source: form.source,
+          contact: {
+            ...(form.firstName && { firstName: form.firstName }),
+            ...(form.lastName && { lastName: form.lastName }),
+            ...(form.phone && { phone: form.phone }),
+            ...(form.email && { email: form.email }),
+          },
+          interest: {
+            ...(form.commune && { commune: form.commune }),
+            ...(form.budget && { budget: Number(form.budget), currency: form.currency }),
+          },
+        }),
+      });
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+      <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-6">
+        <h2 className="mb-4 text-lg font-bold">Nuevo Lead</h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs text-zinc-400">Nombre</label>
+              <input
+                value={form.firstName}
+                onChange={(e) => set("firstName", e.target.value)}
+                placeholder="Juan"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-zinc-400">Apellido</label>
+              <input
+                value={form.lastName}
+                onChange={(e) => set("lastName", e.target.value)}
+                placeholder="González"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-zinc-400">Teléfono <span className="text-zinc-600">(o email, al menos uno)</span></label>
+            <input
+              value={form.phone}
+              onChange={(e) => set("phone", e.target.value)}
+              placeholder="+56912345678"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-zinc-400">Email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => set("email", e.target.value)}
+              placeholder="juan@gmail.com"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-zinc-400">Fuente *</label>
+            <select
+              value={form.source}
+              onChange={(e) => set("source", e.target.value)}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            >
+              {LEAD_SOURCES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-zinc-400">Comuna de interés</label>
+            <input
+              value={form.commune}
+              onChange={(e) => set("commune", e.target.value)}
+              placeholder="Las Condes"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs text-zinc-400">Presupuesto</label>
+              <input
+                type="number"
+                value={form.budget}
+                onChange={(e) => set("budget", e.target.value)}
+                placeholder="5000"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-zinc-400">Moneda</label>
+              <select
+                value={form.currency}
+                onChange={(e) => set("currency", e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              >
+                <option value="UF">UF</option>
+                <option value="CLP">CLP</option>
+              </select>
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-zinc-700 px-3 py-2 text-sm hover:bg-zinc-800"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {loading ? "Guardando…" : "Crear Lead"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function LeadsPage() {
   const [unresponded, setUnresponded] = useState(false);
-  const { data, isLoading, error } = useLeads({ unresponded });
+  const [showModal, setShowModal] = useState(false);
+  const { data, isLoading, error, refetch } = useLeads({ unresponded });
 
   return (
     <div>
+      {showModal && (
+        <NuevoLeadModal
+          onClose={() => setShowModal(false)}
+          onSuccess={() => refetch()}
+        />
+      )}
+
       <header className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Bandeja de Leads</h1>
           <p className="text-sm text-zinc-400">¿A quién contacto ahora?</p>
         </div>
-        <label className="flex items-center gap-2 text-sm text-zinc-300">
-          <input type="checkbox" checked={unresponded} onChange={(e) => setUnresponded(e.target.checked)} />
-          Solo sin respuesta
-        </label>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-zinc-300">
+            <input type="checkbox" checked={unresponded} onChange={(e) => setUnresponded(e.target.checked)} />
+            Solo sin respuesta
+          </label>
+          <button
+            onClick={() => setShowModal(true)}
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium hover:bg-emerald-500"
+          >
+            + Nuevo Lead
+          </button>
+        </div>
       </header>
 
       {isLoading && <p className="text-zinc-400">Cargando…</p>}
@@ -46,7 +244,6 @@ export default function LeadsPage() {
         <div className="rounded-xl border border-urgent/40 bg-zinc-900 p-5 text-sm">
           <p className="font-semibold text-urgent">No se pudo cargar los leads</p>
           <p className="mt-1 text-zinc-400">{(error as Error).message}</p>
-          <p className="mt-2 text-zinc-500 text-xs">Verifica que la API esté corriendo en <code>localhost:4000</code>.</p>
         </div>
       )}
 
