@@ -3,6 +3,7 @@ import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { LoginSchema, LoginInput } from "@clientra/shared-types";
 import { LoginUseCase, LoginResult } from "../application/login.use-case";
 import { RefreshUseCase, RefreshResult } from "../application/refresh.use-case";
+import { LogoutUseCase } from "../application/logout.use-case";
 import { ZodValidationPipe } from "../../../shared/pipes/zod-validation.pipe";
 
 @Controller("auth")
@@ -11,6 +12,7 @@ export class AuthController {
   constructor(
     private readonly login: LoginUseCase,
     private readonly refresh: RefreshUseCase,
+    private readonly logout: LogoutUseCase,
   ) {}
 
   /** 5 intentos por minuto por IP — protección anti-fuerza bruta (LLM04/SEC-07). */
@@ -26,7 +28,16 @@ export class AuthController {
   @Post("refresh")
   @HttpCode(200)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  refreshHandler(@Body() body: { refreshToken: string }): { data: RefreshResult } {
-    return { data: this.refresh.execute(body.refreshToken) };
+  async refreshHandler(@Body() body: { refreshToken: string }): Promise<{ data: RefreshResult }> {
+    return { data: await this.refresh.execute(body.refreshToken) };
+  }
+
+  /** Revoca la sesión del refresh token enviado (SEC-03). 20/min por IP. */
+  @Post("logout")
+  @HttpCode(200)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  async logoutHandler(@Body() body: { refreshToken: string }): Promise<{ ok: boolean }> {
+    await this.logout.execute(body.refreshToken);
+    return { ok: true };
   }
 }
