@@ -13,8 +13,15 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
 
-  // Límite de tamaño de payload: evita DoS/flood al modelo (LLM04)
-  app.use(json({ limit: "100kb" }));
+  // Límite de tamaño de payload (LLM04) + captura raw body para verificación HMAC (SEC-04)
+  app.use(
+    json({
+      limit: "100kb",
+      verify: (req: any, _res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
   app.use(urlencoded({ extended: true, limit: "100kb" }));
 
   // Prefijo y versionado de la API (FASE 9: /api/v1)

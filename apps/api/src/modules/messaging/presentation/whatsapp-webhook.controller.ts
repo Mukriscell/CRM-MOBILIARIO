@@ -1,14 +1,18 @@
+import { createHmac, timingSafeEqual } from "crypto";
 import {
   Body,
   Controller,
   ForbiddenException,
   Get,
+  Headers,
   HttpCode,
   Inject,
   Post,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
+import { Request } from "express";
 import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { ReceiveInboundMessageUseCase } from "../application/receive-inbound-message.use-case";
 import { ITenantRepository, TENANT_REPOSITORY } from "../../tenant/domain/tenant.repository.interface";
@@ -53,7 +57,24 @@ export class WhatsAppWebhookController {
   @HttpCode(200)
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 200, ttl: 60_000 } })
-  async inbound(@Body() payload: any): Promise<{ received: boolean }> {
+  async inbound(
+    @Req() req: Request & { rawBody?: Buffer },
+    @Body() payload: any,
+    @Headers("x-hub-signature-256") signature?: string,
+  ): Promise<{ received: boolean }> {
+    // SEC-04: verificar firma HMAC-SHA256 de Meta si el App Secret está configurado
+    const appSecret = process.env.WHATSAPP_APP_SECRET;
+    if (appSecret) {
+      if (!signature || !req.rawBody) {
+        throw new ForbiddenException("Firma HMAC ausente");
+      }
+      const expected = "sha256=" + createHmac("sha256", appSecret).update(req.rawBody).digest("hex");
+      const sigBuf = Buffer.from(signature);
+      const expBuf = Buffer.from(expected);
+      if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
+        throw new ForbiddenException("Firma HMAC inválida");
+      }
+    }
     const slug = process.env.WHATSAPP_DEFAULT_TENANT_SLUG ?? "demo";
     const tenant = await this.tenants.findBySlug(slug);
     if (!tenant) throw new NotFoundError("Tenant del webhook no encontrado");
