@@ -1,8 +1,7 @@
 import { Logger, Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
 import { TenantModule } from "../tenant/tenant.module";
-import { LEAD_REPOSITORY } from "../leads/domain/lead.repository.interface";
-import { PrismaLeadRepository } from "../leads/infrastructure/prisma-lead.repository";
+import { LeadsModule } from "../leads/leads.module";
 import { CONVERSATION_REPOSITORY } from "./domain/conversation.repository.interface";
 import { MESSAGING_PROVIDER } from "./domain/messaging-provider.interface";
 import { PrismaConversationRepository } from "./infrastructure/prisma-conversation.repository";
@@ -26,11 +25,10 @@ import {
  * de lo contrario un proveedor de consola que simula el envío (demo local).
  */
 @Module({
-  imports: [AuthModule, TenantModule],
+  imports: [AuthModule, TenantModule, LeadsModule],
   controllers: [InboxController, WhatsAppWebhookController, SimulateInboundController],
   providers: [
     { provide: CONVERSATION_REPOSITORY, useClass: PrismaConversationRepository },
-    { provide: LEAD_REPOSITORY, useClass: PrismaLeadRepository },
     {
       provide: MESSAGING_PROVIDER,
       useFactory: () => {

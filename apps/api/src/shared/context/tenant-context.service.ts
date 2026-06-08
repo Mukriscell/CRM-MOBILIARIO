@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ClsService } from "nestjs-cls";
+import { ForbiddenError } from "../errors/domain-error";
 
 export interface RequestContext {
   tenantId: string | null;
@@ -26,7 +27,7 @@ export class TenantContextService {
   /** tenantId del request actual; lanza si no hay (uso en recursos tenant-scoped). */
   requireTenantId(): string {
     const { tenantId } = this.get();
-    if (!tenantId) throw new Error("Tenant context no disponible");
+    if (!tenantId) throw new ForbiddenError("Acceso denegado: recurso requiere tenant");
     return tenantId;
   }
 
