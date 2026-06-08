@@ -21,17 +21,25 @@ export interface MessageRow {
   createdAt: string;
 }
 
+interface ConversationListResponse {
+  items: ConversationRow[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 interface ThreadResponse {
-  data: {
-    conversation: ConversationRow;
-    messages: MessageRow[];
+  conversation: ConversationRow;
+  messages: {
+    items: MessageRow[];
+    nextCursor: string | null;
+    hasMore: boolean;
   };
 }
 
 export function useConversations() {
   return useQuery({
     queryKey: ["conversations"],
-    queryFn: () => apiFetch<{ data: ConversationRow[] }>("/conversations"),
+    queryFn: () => apiFetch<ConversationListResponse>("/conversations"),
   });
 }
 

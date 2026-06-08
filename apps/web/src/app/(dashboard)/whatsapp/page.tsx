@@ -10,7 +10,7 @@ import {
 export default function InboxPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const { data: convs, isLoading } = useConversations();
-  const conversations = convs?.data ?? [];
+  const conversations = convs?.items ?? [];
 
   return (
     <div>
@@ -90,8 +90,8 @@ function Thread({ conversationId }: { conversationId: string }) {
   const send = useSendMessage(conversationId);
   const [text, setText] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
-  const messages = data?.data.messages ?? [];
-  const conv = data?.data.conversation;
+  const messages = data?.messages?.items ?? [];
+  const conv = data?.conversation;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
