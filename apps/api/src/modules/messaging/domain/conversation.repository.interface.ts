@@ -9,7 +9,7 @@ export interface AppendMessageData {
   type?: MessageType;
   body?: string | null;
   waMessageId?: string | null;
-  sentByUserId?: string | null; // NULL = automático/sistema
+  sentByUserId?: string | null;
   metadata?: unknown;
 }
 
@@ -19,8 +19,19 @@ export interface ConversationWithLast extends Conversation {
   leadName: string | null;
 }
 
+export interface ConversationPage {
+  items: ConversationWithLast[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export interface MessagePage {
+  items: Message[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 export interface IConversationRepository {
-  /** Busca por teléfono o crea una conversación nueva (idempotente por tenant+phone abierto). */
   findOrCreateByPhone(
     tenantId: string,
     phone: string,
@@ -30,7 +41,7 @@ export interface IConversationRepository {
   findById(tenantId: string, id: string): Promise<Conversation | null>;
   findByLeadId(tenantId: string, leadId: string): Promise<Conversation | null>;
   appendMessage(data: AppendMessageData): Promise<Message>;
-  listMessages(tenantId: string, conversationId: string): Promise<Message[]>;
-  listConversations(tenantId: string): Promise<ConversationWithLast[]>;
+  listMessages(tenantId: string, conversationId: string, cursor: string | null, limit: number): Promise<MessagePage>;
+  listConversations(tenantId: string, cursor: string | null, limit: number): Promise<ConversationPage>;
   touchLastMessage(tenantId: string, conversationId: string, at: Date, windowExpiresAt: Date): Promise<void>;
 }

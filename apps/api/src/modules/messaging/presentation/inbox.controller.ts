@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../auth/infrastructure/jwt-auth.guard";
 import { CurrentUser, AuthUser } from "../../../shared/decorators/current-user.decorator";
 import { TenantContextService } from "../../../shared/context/tenant-context.service";
@@ -21,15 +21,24 @@ export class InboxController {
   ) {}
 
   @Get()
-  async list() {
+  async list(
+    @Query("cursor") cursor?: string,
+    @Query("limit") limit?: string,
+  ) {
     const tenantId = this.tenantContext.requireTenantId();
-    return { data: await this.listConversations.execute(tenantId) };
+    const result = await this.listConversations.execute(tenantId, cursor ?? null, limit ? Number(limit) : undefined);
+    return result;
   }
 
   @Get(":id")
-  async thread(@Param("id") id: string) {
+  async thread(
+    @Param("id") id: string,
+    @Query("cursor") cursor?: string,
+    @Query("limit") limit?: string,
+  ) {
     const tenantId = this.tenantContext.requireTenantId();
-    return { data: await this.getThread.execute(tenantId, id) };
+    const result = await this.getThread.execute(tenantId, id, cursor ?? null, limit ? Number(limit) : undefined);
+    return result;
   }
 
   @Post(":id/messages")

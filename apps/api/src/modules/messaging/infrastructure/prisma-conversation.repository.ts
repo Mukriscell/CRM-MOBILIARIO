@@ -3,8 +3,10 @@ import { Conversation, Message, Prisma } from "@prisma/client";
 import { PrismaService } from "../../../infrastructure/database/prisma.service";
 import {
   AppendMessageData,
+  ConversationPage,
   ConversationWithLast,
   IConversationRepository,
+  MessagePage,
 } from "../domain/conversation.repository.interface";
 
 @Injectable()
@@ -84,34 +86,41 @@ export class PrismaConversationRepository implements IConversationRepository {
     });
   }
 
-  listMessages(tenantId: string, conversationId: string): Promise<Message[]> {
-    return this.prisma.message.findMany({
+  async listMessages(tenantId: string, conversationId: string, cursor: string | null, limit: number): Promise<MessagePage> {
+    const rows = await this.prisma.message.findMany({
       where: { tenantId, conversationId },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take: limit + 1,
     });
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore && items.length > 0 ? items[items.length - 1].id : null;
+    return { items, nextCursor, hasMore };
   }
 
-  async listConversations(tenantId: string): Promise<ConversationWithLast[]> {
+  async listConversations(tenantId: string, cursor: string | null, limit: number): Promise<ConversationPage> {
     const rows = await this.prisma.conversation.findMany({
       where: { tenantId },
-      orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
+      orderBy: [{ lastMessageAt: { sort: "desc", nulls: "last" } }, { id: "desc" }],
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take: limit + 1,
       include: {
         lead: { select: { firstName: true, lastName: true } },
         messages: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     });
-    return rows.map((c) => {
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore && items.length > 0 ? items[items.length - 1].id : null;
+    const data: ConversationWithLast[] = items.map((c) => {
       const last = c.messages[0];
       const leadName = c.lead
         ? [c.lead.firstName, c.lead.lastName].filter(Boolean).join(" ") || null
         : null;
-      return {
-        ...c,
-        lastMessageBody: last?.body ?? null,
-        lastMessageDirection: last?.direction ?? null,
-        leadName,
-      };
+      return { ...c, lastMessageBody: last?.body ?? null, lastMessageDirection: last?.direction ?? null, leadName };
     });
+    return { items: data, nextCursor, hasMore };
   }
 
   async touchLastMessage(
