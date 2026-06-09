@@ -10,6 +10,8 @@ export interface ScoreResult {
   scoreValue: number;
   tier: ScoreTier;
   reasons: ScoreReason[];
+  /** Origen efectivo del score. La IA marca "AI"; si cae al fallback heurístico queda "HEURISTIC". */
+  source?: "AI" | "HEURISTIC";
 }
 
 /** 80-100 HOT · 50-79 WARM · 0-49 COLD */

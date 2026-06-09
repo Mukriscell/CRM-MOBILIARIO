@@ -21,7 +21,8 @@ export class CalculateLeadScoreUseCase {
     if (!lead) throw new NotFoundError(`Lead ${leadId} no encontrado`);
 
     const result = await this.provider.score(lead);
-    const saved = await this.scores.save(tenantId, leadId, result, "HEURISTIC");
+    // El proveedor IA marca result.source = "AI"; el heurístico (o un fallback) deja "HEURISTIC".
+    const saved = await this.scores.save(tenantId, leadId, result, result.source ?? "HEURISTIC");
     await this.scores.updateLeadTier(tenantId, leadId, result.tier);
     this.events.publish(new LeadScoredEvent(tenantId, leadId, result.scoreValue, result.tier));
     return saved;
