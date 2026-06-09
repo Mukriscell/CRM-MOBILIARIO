@@ -155,6 +155,58 @@ describe("HeuristicScoringProvider", () => {
     expect(result.tier).toBe("HOT");
   });
 
+  // ── Señales de intención (heurístico mejorado) ────────────────────────────
+
+  it("+15 urgencia HIGH", async () => {
+    const result = await provider.score(makeLead({ urgency: "HIGH" }));
+    expect(result.scoreValue).toBe(15);
+    expect(result.reasons.find((r) => r.rule === "urgency_high")?.delta).toBe(15);
+  });
+
+  it("-5 urgencia LOW (clamped a 0 sin otras señales)", async () => {
+    const result = await provider.score(makeLead({ urgency: "LOW" }));
+    expect(result.scoreValue).toBe(0);
+    expect(result.reasons.find((r) => r.rule === "urgency_low")?.delta).toBe(-5);
+  });
+
+  it("+12 fuente REFERIDO (alta intención)", async () => {
+    const result = await provider.score(makeLead({ source: "REFERIDO" }));
+    expect(result.scoreValue).toBe(12);
+    expect(result.reasons.find((r) => r.rule === "source_intent")?.delta).toBe(12);
+  });
+
+  it("fuente WHATSAPP no aporta (baseline neutro)", async () => {
+    const result = await provider.score(makeLead({ source: "WHATSAPP" }));
+    expect(result.scoreValue).toBe(0);
+    expect(result.reasons.find((r) => r.rule === "source_intent")).toBeUndefined();
+  });
+
+  it("+10 interesado en una propiedad concreta", async () => {
+    const result = await provider.score(makeLead({ interestedPropertyId: "prop-1" }));
+    expect(result.scoreValue).toBe(10);
+    expect(result.reasons.find((r) => r.rule === "interested_property")).toBeTruthy();
+  });
+
+  it("+5 lead enganchado (firstResponseAt presente)", async () => {
+    const result = await provider.score(makeLead({ firstResponseAt: new Date() }));
+    expect(result.scoreValue).toBe(5);
+    expect(result.reasons.find((r) => r.rule === "engaged")).toBeTruthy();
+  });
+
+  it("combina señales financieras + intención", async () => {
+    // subsidio(40) + referido(12) + urgencia alta(15) + propiedad(10) = 77 → WARM
+    const result = await provider.score(
+      makeLead({
+        subsidyEligible: true,
+        source: "REFERIDO",
+        urgency: "HIGH",
+        interestedPropertyId: "prop-1",
+      }),
+    );
+    expect(result.scoreValue).toBe(77);
+    expect(result.tier).toBe("WARM");
+  });
+
   // ── Idempotencia ──────────────────────────────────────────────────────────
 
   it("resultado idempotente: mismos datos → mismo score", async () => {

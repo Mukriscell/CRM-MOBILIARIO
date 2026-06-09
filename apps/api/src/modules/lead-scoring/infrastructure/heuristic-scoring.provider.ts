@@ -4,9 +4,20 @@ import { IScoringProvider } from "../domain/scoring-provider.interface";
 import { ScoreReason, ScoreResult, classifyTier } from "../domain/lead-score.entity";
 
 /**
- * Motor de scoring heurístico (H3).
- * Reglas determinísticas sobre campos financieros del lead;
- * sin dependencias externas — corre en memoria, sin latencia.
+ * Peso de intención por canal de origen del lead. Solo canales de alta intención
+ * suman; redes/ads/whatsapp quedan en 0 (baseline neutro, sin penalizar).
+ */
+const SOURCE_INTENT_WEIGHTS = {
+  REFERIDO: 12, // recomendación directa — la mayor intención
+  PORTAL: 8, // búsqueda activa en portal inmobiliario
+  WEB_FORM: 5, // completó un formulario web
+  LANDING: 3, // llegó por una landing
+} as const;
+
+/**
+ * Motor de scoring heurístico (H3, mejorado).
+ * Reglas determinísticas sobre señales financieras y de intención del lead;
+ * sin dependencias externas — corre en memoria, sin latencia, explicable.
  */
 @Injectable()
 export class HeuristicScoringProvider implements IScoringProvider {
@@ -63,6 +74,46 @@ export class HeuristicScoringProvider implements IScoringProvider {
     if (monthlyIncome !== null && monthlyIncome >= 3_000_000) {
       total += 10;
       reasons.push({ rule: "high_income", delta: 10, description: "Ingreso familiar alto (≥ $3.000.000)" });
+    }
+
+    // ── Señales de intención (no financieras) ────────────────────────────────
+
+    // Urgencia declarada de compra (campo del modelo, rawPayload como fallback)
+    const urgency = (lead.urgency ?? (raw?.urgency as string | null)) ?? null;
+    if (urgency === "HIGH") {
+      total += 15;
+      reasons.push({ rule: "urgency_high", delta: 15, description: "Urgencia de compra alta" });
+    } else if (urgency === "MEDIUM") {
+      total += 5;
+      reasons.push({ rule: "urgency_medium", delta: 5, description: "Urgencia de compra media" });
+    } else if (urgency === "LOW") {
+      total -= 5;
+      reasons.push({ rule: "urgency_low", delta: -5, description: "Urgencia de compra baja" });
+    }
+
+    // Intención según el canal de origen: un referido o un portal inmobiliario
+    // traen más intención de compra que tráfico de redes/ads.
+    const sourceWeight =
+      SOURCE_INTENT_WEIGHTS[lead.source as keyof typeof SOURCE_INTENT_WEIGHTS] ?? 0;
+    if (sourceWeight > 0) {
+      total += sourceWeight;
+      reasons.push({
+        rule: "source_intent",
+        delta: sourceWeight,
+        description: `Fuente de alta intención (${lead.source})`,
+      });
+    }
+
+    // El lead ya mira una propiedad concreta → intención fuerte
+    if (lead.interestedPropertyId) {
+      total += 10;
+      reasons.push({ rule: "interested_property", delta: 10, description: "Interesado en una propiedad concreta" });
+    }
+
+    // Ya enganchado: respondió y está en conversación
+    if (lead.firstResponseAt) {
+      total += 5;
+      reasons.push({ rule: "engaged", delta: 5, description: "Lead ya respondió (en conversación)" });
     }
 
     const scoreValue = Math.max(0, Math.min(100, total));
