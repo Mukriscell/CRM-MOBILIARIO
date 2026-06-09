@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLeads, useDeleteLead, LeadRow } from "@/features/leads/useLeads";
 import { useAuth } from "@/features/auth/auth.store";
 import { apiFetch } from "@/shared/lib/api-client";
+import { LeadStatusBadge } from "@/components/LeadStatusBadge";
 
 const SCORE_STYLE: Record<string, string> = {
   HOT: "bg-red-900/50 text-red-300 border border-red-700/50",
@@ -25,7 +26,7 @@ const LEAD_SOURCES = [
 function ScoreBadge({ tier }: { tier: string | null }) {
   if (!tier) return <span className="text-zinc-600 text-xs">—</span>;
   return (
-    <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-bold ${SCORE_STYLE[tier] ?? ""}`}>
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${SCORE_STYLE[tier] ?? ""}`}>
       {tier}
     </span>
   );
@@ -284,7 +285,7 @@ export default function LeadsPage() {
                   </td>
                   <td className="px-3 py-2 text-zinc-300">{lead.phone ?? "—"}</td>
                   <td className="px-3 py-2 text-zinc-400">{lead.source}</td>
-                  <td className="px-3 py-2">{lead.status}</td>
+                  <td className="px-3 py-2"><LeadStatusBadge status={lead.status} /></td>
                   <td className="px-3 py-2">{waitingBadge(lead.minutesWaiting)}</td>
                   <td className="flex gap-2 whitespace-nowrap px-3 py-2">
                     {lead.phone && (
